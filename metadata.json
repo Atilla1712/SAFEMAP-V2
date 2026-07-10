@@ -1,0 +1,6 @@
+{
+  "name": "SafeMap",
+  "description": "A hyperlocal safety map with educational resources, screening questionnaire, and stealth calculator disguise.",
+  "requestFramePermissions": ["geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,184 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Karla", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Plus Jakarta Sans", sans-serif;
+  
+  --color-bg: #1B2620;
+  --color-bg-darker: #151E19;
+  --color-surface: #24332B;
+  --color-surface-elevated: #2C3D34;
+  --color-accent-sage: #7FA396;
+  --color-accent-terracotta: #E0703D;
+  --color-accent-gold: #C9A66B;
+  --color-text-primary: #F0EEE8;
+  --color-text-secondary: #B8C2BC;
+  --color-text-muted: #8A9590;
+}
+
+@layer base {
+  body {
+    font-family: var(--font-sans);
+    color: var(--color-text-primary);
+    background-color: var(--color-bg);
+    overflow-x: hidden;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+}
+
+/* Glassmorphism Styles matching the design instructions */
+.glass {
+  background: rgba(36, 51, 43, 0.55);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-top: 1px solid rgba(255, 255, 255, 0.22); /* Light-catching glass rim */
+  box-shadow: 0 8px 32px rgba(127, 163, 150, 0.12);
+}
+
+.glass-panel {
+  background: rgba(36, 51, 43, 0.55);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-top-color: rgba(255, 255, 255, 0.22); /* Light-catching glass rim */
+  box-shadow: 0 8px 32px rgba(127, 163, 150, 0.12);
+}
+
+.glass-panel-elevated {
+  background: rgba(44, 61, 52, 0.65);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-top-color: rgba(255, 255, 255, 0.26);
+  box-shadow: 0 12px 36px rgba(127, 163, 150, 0.16);
+}
+
+.glass-navbar {
+  background: rgba(36, 51, 43, 0.65);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.glass-nav {
+  background: rgba(36, 51, 43, 0.65);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.2);
+}
+
+/* Blobs layout and animations for deep immersive experience */
+.blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(100px);
+  opacity: 0.2;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.blob-1 {
+  width: 500px;
+  height: 500px;
+  background: #7FA396;
+  top: -100px;
+  right: -100px;
+}
+
+.blob-2 {
+  width: 400px;
+  height: 400px;
+  background: #C9A66B;
+  bottom: -50px;
+  left: -50px;
+}
+
+/* Device frame container for desktop viewports */
+.app-container {
+  background: #151E19;
+  position: relative;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-left: 1px solid rgba(255, 255, 255, 0.05);
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Active navigation dot helper */
+.nav-active {
+  color: #7FA396;
+  position: relative;
+}
+
+.nav-active::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 4px;
+  background: #7FA396;
+  border-radius: 50%;
+  box-shadow: 0 0 10px #7FA396;
+}
+
+/* Pulsing styling for disguise key action elements */
+.calculator-btn {
+  animation: pulse-glow 3s infinite;
+}
+
+@keyframes pulse-glow {
+  0% {
+    opacity: 0.8;
+  }
+  50% {
+    opacity: 1;
+    box-shadow: 0 0 15px rgba(127, 163, 150, 0.3);
+  }
+  100% {
+    opacity: 0.8;
+  }
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(127, 163, 150, 0.3);
+  border-radius: 99px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(127, 163, 150, 0.5);
+}
+
+/* Ambient glow animations */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px) scale(1);
+  }
+  50% {
+    transform: translateY(-15px) scale(1.05);
+  }
+}
+
+.animate-glow-slow {
+  animation: float 8s ease-in-out infinite;
+}
+
+.animate-glow-slower {
+  animation: float 12s ease-in-out infinite;
+}
+
