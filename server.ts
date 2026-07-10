@@ -12,56 +12,72 @@ const DB_PATH = path.join(process.cwd(), "src", "data", "db.json");
 app.use(express.json());
 
 // Ensure Database File Exists & is Seeded
+let dbCache: any = null;
+
 function initializeDatabase() {
   const dir = path.dirname(DB_PATH);
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
+  
+  // Try to create the directory if it doesn't exist
+  try {
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+  } catch (e) {
+    console.warn("Could not create directory for database:", e);
   }
 
-  if (!fs.existsSync(DB_PATH)) {
-    const initialDb = {
+  let dbData: any = null;
+  if (fs.existsSync(DB_PATH)) {
+    try {
+      const raw = fs.readFileSync(DB_PATH, "utf-8");
+      dbData = JSON.parse(raw);
+      if (!dbData.resources || !dbData.pendingSubmissions || !dbData.approvedHistory || !dbData.chats) {
+        throw new Error("Invalid structure");
+      }
+    } catch (e) {
+      console.log("Database file corrupted or outdated, re-initializing...");
+    }
+  }
+
+  if (!dbData) {
+    dbData = {
       resources: SEEDED_RESOURCES,
       pendingSubmissions: [],
       approvedHistory: [],
       chats: {}
     };
-    fs.writeFileSync(DB_PATH, JSON.stringify(initialDb, null, 2), "utf-8");
-    console.log("Database initialized and seeded.");
-  } else {
-    // Validate if structure has all fields
     try {
-      const raw = fs.readFileSync(DB_PATH, "utf-8");
-      const data = JSON.parse(raw);
-      if (!data.resources || !data.pendingSubmissions || !data.approvedHistory || !data.chats) {
-        throw new Error("Invalid structure");
-      }
+      fs.writeFileSync(DB_PATH, JSON.stringify(dbData, null, 2), "utf-8");
     } catch (e) {
-      console.log("Database file corrupted or outdated, re-initializing...");
-      const initialDb = {
-        resources: SEEDED_RESOURCES,
-        pendingSubmissions: [],
-        approvedHistory: [],
-        chats: {}
-      };
-      fs.writeFileSync(DB_PATH, JSON.stringify(initialDb, null, 2), "utf-8");
+      console.warn("Could not write initial database to disk (this is expected in serverless/read-only environments like Vercel).");
     }
   }
+
+  dbCache = dbData;
 }
 
 initializeDatabase();
 
 // Helper to Read/Write DB
 function readDb() {
+  if (dbCache) return dbCache;
   try {
     const raw = fs.readFileSync(DB_PATH, "utf-8");
-    return JSON.parse(raw);
+    dbCache = JSON.parse(raw);
+    return dbCache;
   } catch (e) {
-    return { resources: SEEDED_RESOURCES, pendingSubmissions: [], approvedHistory: [], chats: {} };
+    dbCache = { resources: SEEDED_RESOURCES, pendingSubmissions: [], approvedHistory: [], chats: {} };
+    return dbCache;
   }
 }
 
 function writeDb(data: any) {
-  fs.writeFileSync(DB_PATH, JSON.stringify(data, null, 2), "utf-8");
+  dbCache = data;
+  try {
+    fs.writeFileSync(DB_PATH, JSON.stringify(data, null, 2), "utf-8");
+  } catch (e) {
+    console.warn("Unable to write database to disk (expected in serverless/read-only environments):", e);
+  }
 }
 
 // Credentials (Default fallbacks for easy evaluation)
@@ -518,4 +534,9 @@ async function startServer() {
   });
 }
 
-startServer();
+// Only start the server locally or in dev server; let Vercel import the app directly as a serverless function
+if (!process.env.VERCEL) {
+  startServer();
+}
+
+export default app;
