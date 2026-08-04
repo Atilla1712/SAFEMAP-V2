@@ -19,9 +19,11 @@ interface AdminPanelProps {
   language: "id" | "en";
   onBackToApp: () => void;
   onLanguageToggle?: () => void;
+  onThemeToggle?: () => void;
+  theme?: "dark" | "light";
 }
 
-export default function AdminPanel({ language, onBackToApp, onLanguageToggle }: AdminPanelProps) {
+export default function AdminPanel({ language, onBackToApp, onLanguageToggle, onThemeToggle, theme = "dark" }: AdminPanelProps) {
   const strings = language === "en" ? EN_STRINGS : ID_STRINGS;
   const adminStrings = strings.admin;
 
@@ -418,14 +420,24 @@ export default function AdminPanel({ language, onBackToApp, onLanguageToggle }: 
               <button
                 type="button"
                 onClick={onLanguageToggle}
-                className="text-xs font-semibold px-2.5 py-1.5 rounded-lg bg-[#202C26] text-[#7FA396] hover:bg-[#283830] transition-all border border-white/5 flex items-center gap-1"
+                className="text-xs font-semibold px-2.5 py-1.5 rounded-lg bg-[#202C26] text-[#7FA396] hover:bg-[#283830] transition-all border border-white/5 flex items-center gap-1 light-pill-btn"
               >
                 <span>{language === "id" ? "🇮🇩 ID" : "🇬🇧 EN"}</span>
               </button>
             )}
+            {onThemeToggle && (
+              <button
+                type="button"
+                onClick={onThemeToggle}
+                className="text-xs font-semibold px-2.5 py-1.5 rounded-lg bg-[#202C26] text-[#7FA396] hover:bg-[#283830] transition-all border border-white/5 flex items-center gap-1 light-pill-btn"
+                title={theme === "light" ? "Switch to Dark Mode" : "Switch to Light Mode"}
+              >
+                <span>{theme === "light" ? "☀️" : "🌙"}</span>
+              </button>
+            )}
             <button
               onClick={onBackToApp}
-              className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-[#202C26] text-[#B8C2BC] hover:text-[#F0EEE8] transition-all border border-white/5"
+              className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-[#202C26] text-[#B8C2BC] hover:text-[#F0EEE8] transition-all border border-white/5 light-pill-btn"
             >
               {strings.map.back}
             </button>

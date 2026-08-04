@@ -39,6 +39,26 @@ export default function App() {
   const [language, setLanguage] = useState<"id" | "en">("id");
   const strings = language === "en" ? EN_STRINGS : ID_STRINGS;
 
+  // Theme state: "dark" (default) or "light"
+  const [theme, setTheme] = useState<"dark" | "light">(() => {
+    return (localStorage.getItem("safemap_theme") as "dark" | "light") || "dark";
+  });
+
+  useEffect(() => {
+    localStorage.setItem("safemap_theme", theme);
+    if (theme === "light") {
+      document.documentElement.classList.add("light");
+      document.documentElement.classList.remove("dark");
+    } else {
+      document.documentElement.classList.add("dark");
+      document.documentElement.classList.remove("light");
+    }
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme((prev) => (prev === "light" ? "dark" : "light"));
+  };
+
   // Onboarding & Router States
   const [isOnboarded, setIsOnboarded] = useState<boolean>(false);
   const [onboardingSlide, setOnboardingSlide] = useState<number>(0);
@@ -400,6 +420,8 @@ export default function App() {
         language={language}
         onBackToApp={() => setCurrentScreen("about")}
         onLanguageToggle={() => setLanguage(language === "id" ? "en" : "id")}
+        onThemeToggle={toggleTheme}
+        theme={theme}
       />
     );
   }
@@ -449,10 +471,20 @@ export default function App() {
               {/* Language switch */}
               <button
                 onClick={() => setLanguage(language === "id" ? "en" : "id")}
-                className="px-2.5 py-1.5 rounded-lg text-[10px] font-bold glass-panel text-[#F0EEE8] border border-white/5 hover:text-[#7FA396] transition-all flex items-center gap-1 active:scale-95"
+                className="px-2.5 py-1.5 rounded-lg text-[10px] font-bold glass-panel text-[#F0EEE8] border border-white/5 hover:text-[#7FA396] transition-all flex items-center gap-1 active:scale-95 light-pill-btn"
               >
                 <span>🌐</span>
                 <span>{language === "id" ? "ID" : "EN"}</span>
+              </button>
+
+              {/* Theme switch (Light / Dark mode) */}
+              <button
+                onClick={toggleTheme}
+                className="px-2.5 py-1.5 rounded-lg text-[10px] font-bold glass-panel text-[#F0EEE8] border border-white/5 hover:text-[#7FA396] transition-all flex items-center gap-1 active:scale-95 light-pill-btn"
+                title={theme === "light" ? "Switch to Dark Mode" : "Switch to Light Mode"}
+              >
+                <span>{theme === "light" ? "☀️" : "🌙"}</span>
+                <span className="hidden sm:inline">{theme === "light" ? "Light" : "Dark"}</span>
               </button>
 
               {/* Kalkulator Disguise Toggle Pill exactly matching the photo */}

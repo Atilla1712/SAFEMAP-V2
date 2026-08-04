@@ -182,3 +182,156 @@
   animation: float 12s ease-in-out infinite;
 }
 
+/* ==========================================================================
+   LIGHT MODE STYLING OVERRIDES (Matching reference design image)
+   ========================================================================== */
+html.light, body.light, .light {
+  color-scheme: light;
+}
+
+.light body,
+html.light {
+  background-color: #EAF4ED !important;
+  color: #0F2A1E !important;
+}
+
+/* Soft mint glass panels matching photo cards */
+.light .glass,
+.light .glass-panel {
+  background: #D4EBE0 !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid #B8DAC9 !important;
+  box-shadow: 0 4px 18px rgba(15, 42, 30, 0.04) !important;
+}
+
+.light .glass-panel-elevated {
+  background: #D1E8DC !important;
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid #B0D4C3 !important;
+  box-shadow: 0 6px 24px rgba(15, 42, 30, 0.06) !important;
+}
+
+.light .glass-navbar {
+  background: rgba(234, 244, 237, 0.94) !important;
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-bottom: 1px solid rgba(24, 59, 43, 0.10) !important;
+}
+
+.light .glass-nav {
+  background: rgba(234, 244, 237, 0.94) !important;
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-top: 1px solid rgba(24, 59, 43, 0.10) !important;
+  box-shadow: 0 -4px 20px rgba(15, 42, 30, 0.05) !important;
+}
+
+/* Ambient glow blobs in light mode */
+.light .blob-1 {
+  background: #B3DFC9;
+  opacity: 0.45;
+}
+
+.light .blob-2 {
+  background: #CBE6D8;
+  opacity: 0.45;
+}
+
+.light .app-container {
+  background: #EAF4ED !important;
+  border-left-color: rgba(24, 59, 43, 0.10) !important;
+  border-right-color: rgba(24, 59, 43, 0.10) !important;
+}
+
+/* Typography contrast in Light Mode */
+.light .text-\[\#F0EEE8\] {
+  color: #0F2A1E !important;
+}
+
+.light .text-\[\#B8C2BC\] {
+  color: #264A3B !important;
+}
+
+.light .text-\[\#8A9590\] {
+  color: #386150 !important;
+}
+
+.light .text-\[\#7FA396\] {
+  color: #123B2A !important;
+}
+
+/* Background surface overrides for Light Mode */
+.light .bg-\[\#1B2620\] {
+  background-color: #EAF4ED !important;
+}
+
+.light .bg-\[\#151E19\] {
+  background-color: #DFEFE4 !important;
+}
+
+.light .bg-\[\#1C2521\],
+.light .bg-\[\#111815\],
+.light .bg-\[\#1A2621\],
+.light .bg-\[\#111613\] {
+  background-color: #CBDED3 !important;
+}
+
+.light .bg-\[\#202C26\],
+.light .bg-\[\#24332B\],
+.light .bg-\[\#2C3D34\],
+.light .bg-\[\#232F2A\],
+.light .bg-\[\#24362E\] {
+  background-color: #C2E0D1 !important;
+}
+
+.light .border-white\/5,
+.light .border-white\/10,
+.light .border-white\/15,
+.light .border-white\/20 {
+  border-color: rgba(24, 59, 43, 0.12) !important;
+}
+
+/* Primary CTA Buttons in Light Mode (Dark Forest Green with Crisp White Text like screenshot) */
+.light .bg-\[\#7FA396\] {
+  background-color: #15382A !important;
+  color: #FFFFFF !important;
+}
+
+.light .bg-\[\#7FA396\]:hover {
+  background-color: #1C4232 !important;
+}
+
+.light .text-\[\#1B2620\] {
+  color: #FFFFFF !important;
+}
+
+/* Header pills & action buttons in Light Mode */
+.light .light-pill-btn {
+  background-color: #CBDED3 !important;
+  color: #0F2A1E !important;
+  border-color: rgba(24, 59, 43, 0.15) !important;
+}
+
+.light .nav-active {
+  color: #15382A !important;
+}
+
+.light .nav-active::after {
+  background: #15382A !important;
+  box-shadow: 0 0 8px #15382A;
+}
+
+/* Form inputs in Light Mode */
+.light input, .light select, .light textarea {
+  background-color: #D8EDE1 !important;
+  color: #0F2A1E !important;
+  border-color: rgba(24, 59, 43, 0.18) !important;
+}
+
+.light input::placeholder, .light textarea::placeholder {
+  color: #4A6E5E !important;
+}
+
+
