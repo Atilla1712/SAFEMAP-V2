@@ -60,7 +60,11 @@ export async function seedDefaultResourcesToFirestore(): Promise<void> {
 }
 
 export async function saveResourceToFirestore(resource: SupportResource): Promise<void> {
-  const index = inMemoryResources.findIndex((r) => r.id === resource.id);
+  if (!resource) return;
+  const resId = String(resource.id || "").trim();
+  if (!resId) return;
+
+  const index = inMemoryResources.findIndex((r) => r.id === resId);
   if (index !== -1) {
     inMemoryResources[index] = resource;
   } else {
@@ -68,16 +72,18 @@ export async function saveResourceToFirestore(resource: SupportResource): Promis
   }
 
   try {
-    await withTimeout(setDoc(doc(db, "resources", resource.id), resource));
+    await withTimeout(setDoc(doc(db, "resources", resId), resource));
   } catch (err) {
     console.warn("Firestore saveResource error:", err);
   }
 }
 
 export async function deleteResourceFromFirestore(id: string): Promise<void> {
-  inMemoryResources = inMemoryResources.filter((r) => r.id !== id);
+  const resId = String(id || "").trim();
+  if (!resId) return;
+  inMemoryResources = inMemoryResources.filter((r) => r.id !== resId);
   try {
-    await withTimeout(deleteDoc(doc(db, "resources", id)));
+    await withTimeout(deleteDoc(doc(db, "resources", resId)));
   } catch (err) {
     console.warn("Firestore deleteResource error:", err);
   }
@@ -99,18 +105,23 @@ export async function getPendingSubmissionsFromFirestore(): Promise<any[]> {
 }
 
 export async function addPendingSubmissionToFirestore(submission: any): Promise<void> {
-  inMemoryPending.push(submission);
+  if (!submission) return;
+  const subId = String(submission.id || "sub_" + Date.now()).trim();
+  const sanitized = { ...submission, id: subId };
+  inMemoryPending.push(sanitized);
   try {
-    await withTimeout(setDoc(doc(db, "pendingSubmissions", submission.id), submission));
+    await withTimeout(setDoc(doc(db, "pendingSubmissions", subId), sanitized));
   } catch (err) {
     console.warn("Firestore addPendingSubmission error:", err);
   }
 }
 
 export async function deletePendingSubmissionFromFirestore(id: string): Promise<void> {
-  inMemoryPending = inMemoryPending.filter((p) => p.id !== id);
+  const subId = String(id || "").trim();
+  if (!subId) return;
+  inMemoryPending = inMemoryPending.filter((p) => p.id !== subId);
   try {
-    await withTimeout(deleteDoc(doc(db, "pendingSubmissions", id)));
+    await withTimeout(deleteDoc(doc(db, "pendingSubmissions", subId)));
   } catch (err) {
     console.warn("Firestore deletePendingSubmission error:", err);
   }
@@ -157,24 +168,43 @@ export async function getChatsFromFirestore(): Promise<any[]> {
 }
 
 export async function getChatFromFirestore(sessionId: string): Promise<any | null> {
+  const chatId = String(sessionId || "").trim();
+  if (!chatId) return null;
   try {
-    const docSnap = await withTimeout(getDoc(doc(db, "chats", sessionId)));
+    const docSnap = await withTimeout(getDoc(doc(db, "chats", chatId)));
     if (docSnap.exists()) {
       const data = docSnap.data();
-      inMemoryChats[sessionId] = data;
+      inMemoryChats[chatId] = data;
       return data;
     }
-    return null;
+    return inMemoryChats[chatId] || null;
   } catch (err) {
     console.warn("Firestore getChat error/timeout:", err);
-    return inMemoryChats[sessionId] || null;
+    return inMemoryChats[chatId] || null;
   }
 }
 
 export async function saveChatToFirestore(chatSession: any): Promise<void> {
-  inMemoryChats[chatSession.id] = chatSession;
+  if (!chatSession) return;
+  const chatId = String(chatSession.id || chatSession.sessionId || "").trim();
+  if (!chatId) return;
+
+  const sanitized = {
+    id: chatId,
+    sessionId: chatId,
+    messages: (chatSession.messages || []).map((m: any) => ({
+      id: String(m.id || "msg_" + Math.random().toString(36).substr(2, 9)),
+      role: String(m.role || "user"),
+      text: String(m.text || ""),
+      timestamp: String(m.timestamp || new Date().toISOString()),
+    })),
+    needsHuman: Boolean(chatSession.needsHuman),
+    updatedAt: String(chatSession.updatedAt || new Date().toISOString()),
+  };
+
+  inMemoryChats[chatId] = sanitized;
   try {
-    await withTimeout(setDoc(doc(db, "chats", chatSession.id), chatSession));
+    await withTimeout(setDoc(doc(db, "chats", chatId), sanitized));
   } catch (err) {
     console.warn("Firestore saveChat error:", err);
   }

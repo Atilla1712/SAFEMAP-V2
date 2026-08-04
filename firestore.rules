@@ -1,21 +1,34 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Helper functions for basic validation
+    
+    // Global helper functions
     function isString(val) {
       return val is string;
     }
-
+    
     function isNumber(val) {
       return val is number;
     }
+    
+    function isList(val) {
+      return val is list;
+    }
+    
+    function isMap(val) {
+      return val is map;
+    }
 
-    // Public resources collection: allow read for everyone, write for submitting and updating addresses
+    function isBoolean(val) {
+      return val is bool;
+    }
+
+    // Public resources collection: allow read for everyone, write for resource directory management
     match /resources/{resourceId} {
       allow read, write: if true;
     }
 
-    // Pending submissions: allow anyone to submit new address proposals and moderators to manage
+    // Pending submissions: user-submitted proposals awaiting moderation
     match /pendingSubmissions/{submissionId} {
       allow read, write: if true;
     }
@@ -25,7 +38,7 @@ service cloud.firestore {
       allow read, write: if true;
     }
 
-    // Chat sessions for emergency AI assistance
+    // Chat sessions for emergency AI and counselor assistance
     match /chats/{roomId} {
       allow read, write: if true;
     }
@@ -34,5 +47,11 @@ service cloud.firestore {
     match /adminSettings/{settingId} {
       allow read, write: if true;
     }
+
+    // Catch-all default deny for all other paths
+    match /{document=**} {
+      allow read, write: if false;
+    }
   }
 }
+
