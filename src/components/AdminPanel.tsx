@@ -18,9 +18,10 @@ import {
 interface AdminPanelProps {
   language: "id" | "en";
   onBackToApp: () => void;
+  onLanguageToggle?: () => void;
 }
 
-export default function AdminPanel({ language, onBackToApp }: AdminPanelProps) {
+export default function AdminPanel({ language, onBackToApp, onLanguageToggle }: AdminPanelProps) {
   const strings = language === "en" ? EN_STRINGS : ID_STRINGS;
   const adminStrings = strings.admin;
 
@@ -79,14 +80,10 @@ export default function AdminPanel({ language, onBackToApp }: AdminPanelProps) {
         }
       }
 
-      // 2. Client-side Firestore fallback (for static web deployments where Express server is not present)
+      // 2. Client-side Firestore fallback
       const creds = await getAdminCredentialsFromFirestore();
-      const userMatch =
-        cleanUsername.toLowerCase() === (creds.username || "").toLowerCase() ||
-        cleanUsername.toLowerCase() === "adminsafemap";
-      const passMatch =
-        cleanPassword === creds.password ||
-        cleanPassword === "RADEN4EVER";
+      const userMatch = cleanUsername.toLowerCase() === (creds.username || "").toLowerCase();
+      const passMatch = cleanPassword === creds.password;
 
       if (userMatch && passMatch) {
         const adminToken = creds.token || "safemap-admin-auth-secret-token-2026";
@@ -94,22 +91,11 @@ export default function AdminPanel({ language, onBackToApp }: AdminPanelProps) {
         setIsLoggedIn(true);
         localStorage.setItem("safemap_admin_token", adminToken);
       } else {
-        setLoginError("Username atau password salah.");
+        setLoginError(language === "en" ? "Incorrect username or password." : "Username atau password salah.");
       }
     } catch (err) {
       console.error("Login fallback error:", err);
-      // Hard fallback for default credentials
-      if (
-        (cleanUsername.toLowerCase() === "adminsafemap" && cleanPassword === "RADEN4EVER") ||
-        (cleanUsername.toLowerCase() === "admin" && cleanPassword === "admin123")
-      ) {
-        const adminToken = "safemap-admin-auth-secret-token-2026";
-        setToken(adminToken);
-        setIsLoggedIn(true);
-        localStorage.setItem("safemap_admin_token", adminToken);
-      } else {
-        setLoginError("Username atau password salah.");
-      }
+      setLoginError(language === "en" ? "Failed to connect to authentication server." : "Gagal terhubung ke server autentikasi.");
     } finally {
       setLoading(false);
     }
@@ -427,12 +413,23 @@ export default function AdminPanel({ language, onBackToApp }: AdminPanelProps) {
             <span className="text-xl">🛡️</span>
             <span className="font-display font-bold text-lg text-[#F0EEE8]">SafeMap Admin</span>
           </div>
-          <button
-            onClick={onBackToApp}
-            className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-[#202C26] text-[#B8C2BC] hover:text-[#F0EEE8] transition-all border border-white/5"
-          >
-            {strings.map.back}
-          </button>
+          <div className="flex items-center gap-2">
+            {onLanguageToggle && (
+              <button
+                type="button"
+                onClick={onLanguageToggle}
+                className="text-xs font-semibold px-2.5 py-1.5 rounded-lg bg-[#202C26] text-[#7FA396] hover:bg-[#283830] transition-all border border-white/5 flex items-center gap-1"
+              >
+                <span>{language === "id" ? "🇮🇩 ID" : "🇬🇧 EN"}</span>
+              </button>
+            )}
+            <button
+              onClick={onBackToApp}
+              className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-[#202C26] text-[#B8C2BC] hover:text-[#F0EEE8] transition-all border border-white/5"
+            >
+              {strings.map.back}
+            </button>
+          </div>
         </div>
 
         {/* Login Card */}
@@ -446,7 +443,9 @@ export default function AdminPanel({ language, onBackToApp }: AdminPanelProps) {
                 {adminStrings.loginTitle}
               </h2>
               <p className="text-xs text-[#8A9590] mt-1.5">
-                Panel verifikasi usulan layanan & konseling obrolan manusia.
+                {language === "en"
+                  ? "Verification panel for community submissions & survivor counseling."
+                  : "Panel verifikasi usulan layanan & konseling obrolan manusia."}
               </p>
             </div>
 
@@ -467,7 +466,7 @@ export default function AdminPanel({ language, onBackToApp }: AdminPanelProps) {
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   className="w-full px-4 py-3 rounded-xl bg-[#1C2521] border border-white/5 focus:border-[#7FA396] focus:outline-none text-xs text-[#F0EEE8] transition-colors"
-                  placeholder="ADMINSAFEMAP"
+                  placeholder={language === "en" ? "Enter admin username" : "Masukkan ID username"}
                 />
               </div>
 
@@ -481,23 +480,9 @@ export default function AdminPanel({ language, onBackToApp }: AdminPanelProps) {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full px-4 py-3 rounded-xl bg-[#1C2521] border border-white/5 focus:border-[#7FA396] focus:outline-none text-xs text-[#F0EEE8] transition-colors"
-                  placeholder="RADEN4EVER"
+                  placeholder="••••••••"
                 />
               </div>
-            </div>
-
-            <div className="p-2.5 bg-[#1C2521] border border-white/5 rounded-xl text-[11px] text-[#8A9590] flex items-center justify-between">
-              <span>Default: <strong className="text-[#B8C2BC]">ADMINSAFEMAP</strong> / <strong className="text-[#B8C2BC]">RADEN4EVER</strong></span>
-              <button
-                type="button"
-                onClick={() => {
-                  setUsername("ADMINSAFEMAP");
-                  setPassword("RADEN4EVER");
-                }}
-                className="text-[10px] bg-[#7FA396]/20 hover:bg-[#7FA396]/30 text-[#7FA396] px-2 py-1 rounded-md transition-colors"
-              >
-                Gunakan
-              </button>
             </div>
 
             <button
@@ -505,14 +490,16 @@ export default function AdminPanel({ language, onBackToApp }: AdminPanelProps) {
               disabled={loading}
               className="w-full py-3.5 bg-[#7FA396] hover:bg-[#9DBDB0] text-[#1B2620] font-bold rounded-xl text-xs transition-colors shadow-lg shadow-[#7FA396]/10 active:scale-95 disabled:opacity-50"
             >
-              {loading ? "Memproses..." : `🔐 ${adminStrings.loginButton}`}
+              {loading
+                ? (language === "en" ? "Processing..." : "Memproses...")
+                : `🔐 ${adminStrings.loginButton}`}
             </button>
           </form>
         </div>
 
         {/* Footer */}
         <div className="text-center text-[10px] text-[#5C7A6E]">
-          SafeMap Moderation Hub • Secured local session
+          SafeMap Moderation Hub • Secured session
         </div>
       </div>
     );
@@ -537,10 +524,19 @@ export default function AdminPanel({ language, onBackToApp }: AdminPanelProps) {
         </div>
 
         <div className="flex items-center gap-2">
+          {onLanguageToggle && (
+            <button
+              type="button"
+              onClick={onLanguageToggle}
+              className="px-2.5 py-1.5 rounded-lg bg-[#1B2620] hover:bg-[#202C26] text-[#7FA396] transition-all border border-white/5 text-xs font-semibold flex items-center gap-1"
+            >
+              <span>{language === "id" ? "🇮🇩 ID" : "🇬🇧 EN"}</span>
+            </button>
+          )}
           <button
             onClick={loadAllData}
             className="p-2 rounded-lg bg-[#1B2620] hover:bg-[#202C26] text-[#B8C2BC] transition-all border border-white/5"
-            title="Refresh Data"
+            title={language === "en" ? "Refresh Data" : "Muat Ulang Data"}
           >
             <RefreshCw className="w-4 h-4" />
           </button>

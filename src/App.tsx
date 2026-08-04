@@ -395,7 +395,13 @@ export default function App() {
 
   // Admin routing panel view
   if (currentScreen === "admin") {
-    return <AdminPanel language={language} onBackToApp={() => setCurrentScreen("about")} />;
+    return (
+      <AdminPanel
+        language={language}
+        onBackToApp={() => setCurrentScreen("about")}
+        onLanguageToggle={() => setLanguage(language === "id" ? "en" : "id")}
+      />
+    );
   }
 
   return (
