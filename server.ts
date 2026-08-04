@@ -25,6 +25,17 @@ const PORT = 3000;
 
 app.use(express.json());
 
+// Enable CORS for web deployment and cross-origin access
+app.use((req, res, next) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Admin-Token");
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(200);
+  }
+  next();
+});
+
 const ADMIN_TOKEN = "safemap-admin-auth-secret-token-2026";
 
 // Auth Middleware
