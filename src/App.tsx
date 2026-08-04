@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { ID_STRINGS, EN_STRINGS } from "./data/locales";
 import { QUIZ_DATA, calculateQuizResult, QuizResult } from "./data/quizData";
 import { SupportResource, ScreenType } from "./types";
+import { getResourcesFromFirestore, addPendingSubmissionToFirestore } from "./lib/db-service";
 
 // Component imports
 import LeafletMap from "./components/LeafletMap";
@@ -133,11 +134,25 @@ export default function App() {
 
   const fetchResources = () => {
     fetch("/api/resources")
-      .then((res) => res.json())
-      .then((data) => {
-        setResources(data);
+      .then((res) => {
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        return res.json();
       })
-      .catch((err) => console.error("Error loading resources directory:", err));
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setResources(data);
+        } else {
+          throw new Error("Invalid or empty data");
+        }
+      })
+      .catch((err) => {
+        console.warn("API /api/resources unavailable, using Firestore:", err);
+        getResourcesFromFirestore().then((data) => {
+          if (data && data.length > 0) {
+            setResources(data);
+          }
+        });
+      });
   };
 
   const handleOnboardingComplete = () => {
@@ -195,42 +210,62 @@ export default function App() {
       }
     }
 
+    const newSubmission = {
+      id: "sub_" + Date.now(),
+      name: propName,
+      category: propCategory,
+      address: propAddress,
+      phone: propPhone,
+      hours: propHours || "08:00 - 16:00",
+      free: propFree,
+      lat,
+      lng,
+      notes: propNotes,
+      status: "pending",
+      submittedAt: new Date().toISOString(),
+    };
+
+    let submittedOk = false;
     try {
       const res = await fetch("/api/resources", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: propName,
-          category: propCategory,
-          address: propAddress,
-          phone: propPhone,
-          hours: propHours,
-          free: propFree,
-          lat,
-          lng,
-          notes: propNotes,
-        }),
-      });
+        body: JSON.stringify(newSubmission),
+      }).catch(() => null);
 
-      if (res.ok) {
-        setFormSuccess(true);
-        // Reset form
-        setPropName("");
-        setPropAddress("");
-        setPropPhone("");
-        setPropHours("");
-        setPropGmapsLink("");
-        setPropManualCoords("");
-        setPropNotes("");
-        // Close modal after 2.5s
-        setTimeout(() => {
-          setIsSuggestModalOpen(false);
-          setFormSuccess(false);
-        }, 2500);
-      } else {
-        setFormError(strings.addResource.errorToast);
+      if (res && res.ok) {
+        submittedOk = true;
       }
     } catch (err) {
+      console.warn("API submission error, using Firestore fallback:", err);
+    }
+
+    if (!submittedOk) {
+      // Direct Firestore fallback
+      try {
+        await addPendingSubmissionToFirestore(newSubmission);
+        submittedOk = true;
+      } catch (err) {
+        console.error("Firestore submission error:", err);
+      }
+    }
+
+    if (submittedOk) {
+      setFormSuccess(true);
+      // Reset form
+      setPropName("");
+      setPropAddress("");
+      setPropPhone("");
+      setPropHours("");
+      setPropGmapsLink("");
+      setPropManualCoords("");
+      setPropNotes("");
+      // Close modal after 2.5s
+      setTimeout(() => {
+        setIsSuggestModalOpen(false);
+        setFormSuccess(false);
+      }, 2500);
+    } else {
       setFormError(strings.addResource.errorToast);
     }
   };
