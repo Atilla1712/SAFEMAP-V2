@@ -1,0 +1,38 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper functions for basic validation
+    function isString(val) {
+      return val is string;
+    }
+
+    function isNumber(val) {
+      return val is number;
+    }
+
+    // Public resources collection: allow read for everyone, write for submitting and updating addresses
+    match /resources/{resourceId} {
+      allow read, write: if true;
+    }
+
+    // Pending submissions: allow anyone to submit new address proposals and moderators to manage
+    match /pendingSubmissions/{submissionId} {
+      allow read, write: if true;
+    }
+
+    // Approved history logs
+    match /approvedHistory/{historyId} {
+      allow read, write: if true;
+    }
+
+    // Chat sessions for emergency AI assistance
+    match /chats/{roomId} {
+      allow read, write: if true;
+    }
+
+    // Admin settings and login credentials
+    match /adminSettings/{settingId} {
+      allow read, write: if true;
+    }
+  }
+}

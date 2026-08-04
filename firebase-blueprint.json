@@ -1,0 +1,116 @@
+{
+  "entities": {
+    "Resource": {
+      "title": "Resource",
+      "description": "SafeMap support resources and addresses for victims of violence.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique ID of the resource" },
+        "name": { "type": "string", "description": "Name of the organization or resource" },
+        "category": { "type": "string", "description": "Category of assistance (legal, shelter, psychological, etc.)" },
+        "address": { "type": "string", "description": "Full street address" },
+        "lat": { "type": "number", "description": "Latitude coordinate" },
+        "lng": { "type": "number", "description": "Longitude coordinate" },
+        "phone": { "type": "string", "description": "Contact phone number or hotline" },
+        "hours": { "type": "string", "description": "Operating hours" },
+        "services": { 
+          "type": "array", 
+          "description": "List of services provided",
+          "items": { "type": "string" }
+        },
+        "verified": { "type": "boolean", "description": "Whether the resource is verified by SafeMap admins" },
+        "description": { "type": "string", "description": "Description of services and assistance" },
+        "type": { "type": "string", "description": "Resource type classification" }
+      },
+      "required": ["id", "name", "category", "address", "lat", "lng", "phone", "hours", "services", "verified"]
+    },
+    "PendingSubmission": {
+      "title": "PendingSubmission",
+      "description": "User-submitted resource addresses pending moderation approval.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique submission ID" },
+        "name": { "type": "string", "description": "Submitted resource name" },
+        "category": { "type": "string", "description": "Submitted category" },
+        "address": { "type": "string", "description": "Submitted address" },
+        "lat": { "type": "number", "description": "Latitude coordinate" },
+        "lng": { "type": "number", "description": "Longitude coordinate" },
+        "phone": { "type": "string", "description": "Contact phone number" },
+        "hours": { "type": "string", "description": "Operating hours" },
+        "services": {
+          "type": "array",
+          "description": "List of services",
+          "items": { "type": "string" }
+        },
+        "description": { "type": "string", "description": "Description" },
+        "type": { "type": "string", "description": "Type classification" },
+        "submittedAt": { "type": "string", "description": "ISO timestamp of submission" }
+      },
+      "required": ["id", "name", "category", "address", "lat", "lng", "phone", "hours"]
+    },
+    "ApprovedHistory": {
+      "title": "ApprovedHistory",
+      "description": "Audit log of approved submissions.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Resource ID" },
+        "name": { "type": "string", "description": "Resource name" },
+        "category": { "type": "string", "description": "Resource category" },
+        "address": { "type": "string", "description": "Resource address" },
+        "approvedAt": { "type": "string", "description": "ISO timestamp when approved" },
+        "approvedBy": { "type": "string", "description": "Admin who approved" }
+      },
+      "required": ["id", "name", "category", "address", "approvedAt", "approvedBy"]
+    },
+    "Chat": {
+      "title": "Chat",
+      "description": "AI assistance chat history sessions.",
+      "type": "object",
+      "properties": {
+        "room": { "type": "string", "description": "Chat room ID" },
+        "messages": {
+          "type": "array",
+          "description": "List of chat messages",
+          "items": {
+            "type": "object"
+          }
+        },
+        "updatedAt": { "type": "string", "description": "Last updated ISO timestamp" }
+      },
+      "required": ["room", "messages", "updatedAt"]
+    },
+    "AdminCredential": {
+      "title": "AdminCredential",
+      "description": "Admin login credentials for SafeMap moderation.",
+      "type": "object",
+      "properties": {
+        "username": { "type": "string", "description": "Admin username" },
+        "password": { "type": "string", "description": "Admin password" },
+        "token": { "type": "string", "description": "Admin token" }
+      },
+      "required": ["username", "password", "token"]
+    }
+  },
+  "firestore": {
+    "/resources/{resourceId}": {
+      "schema": "Resource",
+      "description": "Publicly readable collection of verified and unverified support resources."
+    },
+    "/pendingSubmissions/{submissionId}": {
+      "schema": "PendingSubmission",
+      "description": "User-submitted resource addresses awaiting moderation."
+    },
+    "/approvedHistory/{historyId}": {
+      "schema": "ApprovedHistory",
+      "description": "Audit log of approved resource submissions."
+    },
+    "/chats/{roomId}": {
+      "schema": "Chat",
+      "description": "Chat session histories for AI assistance."
+    },
+    "/adminSettings/{settingId}": {
+      "schema": "AdminCredential",
+      "description": "Admin configuration and moderation credentials."
+    }
+  }
+}

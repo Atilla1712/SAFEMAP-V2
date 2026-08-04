@@ -39,22 +39,30 @@ export default function AdminPanel({ language, onBackToApp }: AdminPanelProps) {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError("");
+    setLoading(true);
+
+    const cleanUsername = username.trim();
+    const cleanPassword = password.trim();
+
     try {
       const res = await fetch("/api/admin/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify({ username: cleanUsername, password: cleanPassword }),
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({ error: "Respon server tidak valid" }));
       if (res.ok && data.success) {
         setToken(data.token);
         setIsLoggedIn(true);
         localStorage.setItem("safemap_admin_token", data.token);
       } else {
-        setLoginError(data.error || "Login Gagal.");
+        setLoginError(data.error || "Username atau password salah.");
       }
     } catch (err) {
-      setLoginError("Koneksi gagal.");
+      console.error("Login fetch error:", err);
+      setLoginError("Gagal terhubung ke server API.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -319,7 +327,7 @@ export default function AdminPanel({ language, onBackToApp }: AdminPanelProps) {
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   className="w-full px-4 py-3 rounded-xl bg-[#1C2521] border border-white/5 focus:border-[#7FA396] focus:outline-none text-xs text-[#F0EEE8] transition-colors"
-                  placeholder="admin"
+                  placeholder="ADMINSAFEMAP"
                 />
               </div>
 
@@ -333,16 +341,31 @@ export default function AdminPanel({ language, onBackToApp }: AdminPanelProps) {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full px-4 py-3 rounded-xl bg-[#1C2521] border border-white/5 focus:border-[#7FA396] focus:outline-none text-xs text-[#F0EEE8] transition-colors"
-                  placeholder="••••••••"
+                  placeholder="RADEN4EVER"
                 />
               </div>
             </div>
 
+            <div className="p-2.5 bg-[#1C2521] border border-white/5 rounded-xl text-[11px] text-[#8A9590] flex items-center justify-between">
+              <span>Default: <strong className="text-[#B8C2BC]">ADMINSAFEMAP</strong> / <strong className="text-[#B8C2BC]">RADEN4EVER</strong></span>
+              <button
+                type="button"
+                onClick={() => {
+                  setUsername("ADMINSAFEMAP");
+                  setPassword("RADEN4EVER");
+                }}
+                className="text-[10px] bg-[#7FA396]/20 hover:bg-[#7FA396]/30 text-[#7FA396] px-2 py-1 rounded-md transition-colors"
+              >
+                Gunakan
+              </button>
+            </div>
+
             <button
               type="submit"
-              className="w-full py-3.5 bg-[#7FA396] hover:bg-[#9DBDB0] text-[#1B2620] font-bold rounded-xl text-xs transition-colors shadow-lg shadow-[#7FA396]/10 active:scale-95"
+              disabled={loading}
+              className="w-full py-3.5 bg-[#7FA396] hover:bg-[#9DBDB0] text-[#1B2620] font-bold rounded-xl text-xs transition-colors shadow-lg shadow-[#7FA396]/10 active:scale-95 disabled:opacity-50"
             >
-              🔐 {adminStrings.loginButton}
+              {loading ? "Memproses..." : `🔐 ${adminStrings.loginButton}`}
             </button>
           </form>
         </div>
