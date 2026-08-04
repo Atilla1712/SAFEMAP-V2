@@ -136,23 +136,21 @@ export default function Calculator({ onExit, language }: CalculatorProps) {
     setHoldProgress(0);
 
     const duration = 3000; // 3 seconds
-    const intervalTime = 50; // Update progress every 50ms
-    const step = (intervalTime / duration) * 100;
+    const startTime = Date.now();
 
     holdIntervalRef.current = setInterval(() => {
-      setHoldProgress((prev) => {
-        const next = prev + step;
-        if (next >= 100) {
-          if (holdIntervalRef.current) {
-            clearInterval(holdIntervalRef.current);
-            holdIntervalRef.current = null;
-          }
-          triggerExit();
-          return 100;
+      const elapsed = Date.now() - startTime;
+      const progress = Math.min(100, (elapsed / duration) * 100);
+      setHoldProgress(progress);
+
+      if (progress >= 100) {
+        if (holdIntervalRef.current) {
+          clearInterval(holdIntervalRef.current);
+          holdIntervalRef.current = null;
         }
-        return next;
-      });
-    }, intervalTime);
+        triggerExit();
+      }
+    }, 50);
   };
 
   const stopHold = (e: React.PointerEvent<HTMLButtonElement>) => {
