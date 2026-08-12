@@ -59,6 +59,19 @@ export default function App() {
     setTheme((prev) => (prev === "light" ? "dark" : "light"));
   };
 
+  const getDimensionLabel = (dim: string, lang: "id" | "en") => {
+    if (lang !== "en") return dim;
+    const map: Record<string, string> = {
+      "Fisik": "Physical",
+      "Keamanan": "Safety",
+      "Psikologis": "Psychological",
+      "Sosial": "Social",
+      "Emosional": "Emotional",
+      "Digital": "Digital",
+    };
+    return map[dim] || dim;
+  };
+
   // Onboarding & Router States
   const [isOnboarded, setIsOnboarded] = useState<boolean>(false);
   const [onboardingSlide, setOnboardingSlide] = useState<number>(0);
@@ -828,7 +841,7 @@ export default function App() {
                   onClick={() => setCurrentScreen("emergency")}
                   className="mt-3 px-4 py-2 rounded-lg bg-[#E0703D] hover:bg-[#F0804D] text-[#F0EEE8] font-bold text-[10.5px] transition-all"
                 >
-                  Hubungi Kontak Darurat
+                  {language === "en" ? "Call Emergency Contacts" : "Hubungi Kontak Darurat"}
                 </button>
               </div>
 
@@ -861,7 +874,7 @@ export default function App() {
                         <h4 className="text-xs font-bold text-[#F0EEE8]">{textName}</h4>
                         <p className="text-[10px] text-[#8A9590] leading-normal mt-1">{textDesc}</p>
                         <span className="inline-block mt-2.5 text-[9.5px] font-bold text-[#7FA396] hover:underline font-mono uppercase tracking-wider">
-                          Mulai Skrining →
+                          {language === "en" ? "Start Screening →" : "Mulai Skrining →"}
                         </span>
                       </div>
                     </button>
@@ -891,7 +904,7 @@ export default function App() {
                       {/* Progress header */}
                       <div className="flex justify-between items-center text-xs font-semibold text-[#8A9590]">
                         <span className="font-mono uppercase text-[#7FA396] tracking-widest bg-[#7FA396]/10 px-2.5 py-0.5 rounded-full border border-[#7FA396]/20">
-                          {q.dimension}
+                          {getDimensionLabel(q.dimension, language)}
                         </span>
                         <span>
                           {strings.quiz.questionCount
@@ -950,7 +963,7 @@ export default function App() {
 
                 <button
                   onClick={() => {
-                    if (window.confirm("Apakah Anda yakin ingin keluar dari skrining? Jawaban saat ini tidak akan disimpan.")) {
+                    if (window.confirm(language === "en" ? "Are you sure you want to exit the screening? Your current answers will not be saved." : "Apakah Anda yakin ingin keluar dari skrining? Jawaban saat ini tidak akan disimpan.")) {
                       setCurrentScreen("quiz-select");
                     }
                   }}
@@ -999,10 +1012,16 @@ export default function App() {
 
                 <p className="text-xs text-[#B8C2BC] leading-relaxed pt-1.5">
                   {quizResult.severity === "high"
-                    ? "Situasi Anda memiliki tanda bahaya tinggi atau risiko fisik yang mengancam. Sangat disarankan untuk segera menghubungi layanan penyelamatan darurat / rumah aman terdekat."
+                    ? (language === "en"
+                        ? "Your situation indicates high danger flags or threatening physical risks. We strongly recommend contacting emergency rescue services or a nearby shelter immediately."
+                        : "Situasi Anda memiliki tanda bahaya tinggi atau risiko fisik yang mengancam. Sangat disarankan untuk segera menghubungi layanan penyelamatan darurat / rumah aman terdekat.")
                     : quizResult.severity === "medium"
-                    ? "Terdapat indikasi kekerasan sedang yang perlu mendapat perhatian. Melakukan konseling pemulihan trauma psikologis adalah langkah hebat demi mengembalikan kendali emosional Anda."
-                    : "Hasil menunjukkan tingkat keparahan ringan. Silakan pelajari batasan diri sehat dan hubungi pendamping kami jika dirasa membutuhkan teman mengobrol."}
+                    ? (language === "en"
+                        ? "There are indications of moderate violence that require attention. Seeking psychological trauma recovery counseling is an important step toward regaining your emotional control."
+                        : "Terdapat indikasi kekerasan sedang yang perlu mendapat perhatian. Melakukan konseling pemulihan trauma psikologis adalah langkah hebat demi mengembalikan kendali emosional Anda.")
+                    : (language === "en"
+                        ? "Results show a mild severity level. Please learn about healthy personal boundaries and contact our support companions if you feel the need to talk to someone."
+                        : "Hasil menunjukkan tingkat keparahan ringan. Silakan pelajari batasan diri sehat dan hubungi pendamping kami jika dirasa membutuhkan teman mengobrol.")}
                 </p>
               </div>
 
@@ -1017,7 +1036,7 @@ export default function App() {
                     return (
                       <div key={dim} className="space-y-1 text-xs">
                         <div className="flex justify-between font-medium">
-                          <span className="text-[#B8C2BC]">{dim}</span>
+                          <span className="text-[#B8C2BC]">{getDimensionLabel(dim, language)}</span>
                           <span className="text-[#7FA396] font-mono font-bold">{numVal} pts</span>
                         </div>
                         <div className="w-full bg-[#1C2521] h-2 rounded-full overflow-hidden border border-white/5">
@@ -1058,14 +1077,16 @@ export default function App() {
                       <div key={idx} className="glass-panel rounded-xl p-4 border border-white/15 flex items-center justify-between text-left">
                         <div>
                           <h4 className="font-bold text-sm text-[#F0EEE8]">{con.name}</h4>
-                          <p className="text-[10px] text-[#8A9590] leading-normal mt-0.5">{con.desc}</p>
+                          <p className="text-[10px] text-[#8A9590] leading-normal mt-0.5">
+                            {language === "en" && con.descEn ? con.descEn : con.desc}
+                          </p>
                           <span className="block text-[11px] font-bold text-[#E0703D] mt-1 font-mono">{con.number}</span>
                         </div>
                         <button
-                          onClick={() => setEmergencyTarget({ name: con.name, number: con.number, desc: con.desc })}
+                          onClick={() => setEmergencyTarget({ name: con.name, number: con.number, desc: language === "en" && con.descEn ? con.descEn : con.desc })}
                           className="px-3.5 py-2 rounded-lg bg-[#E0703D] hover:bg-[#F0804D] text-[#F0EEE8] text-xs font-bold transition-all active:scale-95"
                         >
-                          📞 Hubungi
+                          {language === "en" ? "📞 Call" : "📞 Hubungi"}
                         </button>
                       </div>
                     ))}
@@ -1175,7 +1196,7 @@ export default function App() {
                       onClick={() => setEmergencyTarget({ name: hl.name, number: hl.number, desc: hl.desc })}
                       className="px-4 py-3 bg-[#E0703D] hover:bg-[#F0804D] text-[#F0EEE8] text-xs font-bold rounded-xl transition-all shadow-md shadow-[#E0703D]/10 active:scale-95 shrink-0 text-center"
                     >
-                      📞 Hubungi
+                      {language === "en" ? "📞 Call" : "📞 Hubungi"}
                     </button>
                   </div>
                 ))}
@@ -1219,7 +1240,7 @@ export default function App() {
               }`}
             >
               <FileText className="w-4.5 h-4.5" />
-              <span className="text-[9.5px] font-semibold">Skrining</span>
+              <span className="text-[9.5px] font-semibold">{language === "en" ? "Screening" : "Skrining"}</span>
             </button>
  
             <button

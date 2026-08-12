@@ -617,7 +617,7 @@ export function calculateQuizResult(type: string, answers: { [qId: string]: numb
 
   const actionsId: string[] = [];
   const actionsEn: string[] = [];
-  const contacts: { name: string; number: string; desc: string }[] = [];
+  const contacts: { name: string; number: string; desc: string; descEn?: string }[] = [];
 
   // Populate actions based on severity
   if (severity === "low") {
@@ -651,12 +651,14 @@ export function calculateQuizResult(type: string, answers: { [qId: string]: numb
     contacts.push({
       name: "Yayasan Pulih",
       number: "0811-8436-633",
-      desc: "Konseling psikologis pemulihan trauma"
+      desc: "Konseling psikologis pemulihan trauma",
+      descEn: "Psychological trauma recovery counseling"
     });
     contacts.push({
       name: "LBH APIK",
       number: "0813-8882-2637",
-      desc: "Bantuan hukum khusus perempuan & anak"
+      desc: "Bantuan hukum khusus perempuan & anak",
+      descEn: "Legal aid for women & children"
     });
   } else {
     // High Severity / Critical
@@ -677,17 +679,20 @@ export function calculateQuizResult(type: string, answers: { [qId: string]: numb
     contacts.push({
       name: "SAPA 129",
       number: "129",
-      desc: "Kementerian PPPA - Evakuasi & Rumah Aman"
+      desc: "Kementerian PPPA - Evakuasi & Rumah Aman",
+      descEn: "Ministry of Women Empowerment - Evacuation & Safe House"
     });
     contacts.push({
       name: "Polisi DKI",
       number: "110",
-      desc: "Layanan Darurat Kepolisian RI"
+      desc: "Layanan Darurat Kepolisian RI",
+      descEn: "National Police Emergency Response Services"
     });
     contacts.push({
       name: "IGD RSCM",
       number: "021-1500135",
-      desc: "Urusan medis darurat & Visum et Repertum"
+      desc: "Urusan medis darurat & Visum et Repertum",
+      descEn: "Emergency medical transport & forensic exam (Visum)"
     });
   }
 
