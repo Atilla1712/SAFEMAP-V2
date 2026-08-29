@@ -2,7 +2,9 @@ import React, { useState, useEffect } from "react";
 import { ID_STRINGS, EN_STRINGS } from "./data/locales";
 import { QUIZ_DATA, calculateQuizResult, QuizResult } from "./data/quizData";
 import { SupportResource, ScreenType } from "./types";
+import { SEEDED_RESOURCES } from "./data/resources";
 import { getResourcesFromFirestore, addPendingSubmissionToFirestore } from "./lib/db-service";
+import { safeGetStorage, safeSetStorage } from "./lib/storage";
 
 // Component imports
 import LeafletMap from "./components/LeafletMap";
@@ -41,11 +43,11 @@ export default function App() {
 
   // Theme state: "dark" (default) or "light"
   const [theme, setTheme] = useState<"dark" | "light">(() => {
-    return (localStorage.getItem("safemap_theme") as "dark" | "light") || "dark";
+    return (safeGetStorage("safemap_theme", "dark") as "dark" | "light") || "dark";
   });
 
   useEffect(() => {
-    localStorage.setItem("safemap_theme", theme);
+    safeSetStorage("safemap_theme", theme);
     if (theme === "light") {
       document.documentElement.classList.add("light");
       document.documentElement.classList.remove("dark");
@@ -73,7 +75,9 @@ export default function App() {
   };
 
   // Onboarding & Router States
-  const [isOnboarded, setIsOnboarded] = useState<boolean>(false);
+  const [isOnboarded, setIsOnboarded] = useState<boolean>(() => {
+    return safeGetStorage("safemap_onboarded", "false") === "true";
+  });
   const [onboardingSlide, setOnboardingSlide] = useState<number>(0);
   const [currentScreen, setCurrentScreen] = useState<ScreenType>("home");
 
@@ -82,8 +86,8 @@ export default function App() {
   const [chatOpen, setChatOpen] = useState<boolean>(false);
   const [sessionId, setSessionId] = useState<string>("");
 
-  // DB resources state
-  const [resources, setResources] = useState<SupportResource[]>([]);
+  // DB resources state (initialize with SEEDED_RESOURCES so map never shows empty)
+  const [resources, setResources] = useState<SupportResource[]>(SEEDED_RESOURCES);
   const [selectedResource, setSelectedResource] = useState<SupportResource | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -122,10 +126,10 @@ export default function App() {
   // Load Seeded Session & Location on Boot
   useEffect(() => {
     // Session ID generation
-    let savedSession = localStorage.getItem("safemap_session_id");
+    let savedSession = safeGetStorage("safemap_session_id");
     if (!savedSession) {
       savedSession = "user_" + Math.random().toString(36).substr(2, 9);
-      localStorage.setItem("safemap_session_id", savedSession);
+      safeSetStorage("safemap_session_id", savedSession);
     }
     setSessionId(savedSession);
 
@@ -190,7 +194,7 @@ export default function App() {
 
   const handleOnboardingComplete = () => {
     setIsOnboarded(true);
-    localStorage.setItem("safemap_onboarded", "true");
+    safeSetStorage("safemap_onboarded", "true");
     setCurrentScreen("home");
   };
 
@@ -415,7 +419,7 @@ export default function App() {
         onComplete={handleOnboardingComplete}
         onSelectCategory={(category) => {
           setIsOnboarded(true);
-          localStorage.setItem("safemap_onboarded", "true");
+          safeSetStorage("safemap_onboarded", "true");
           startQuiz(category);
         }}
         language={language}
@@ -1267,18 +1271,16 @@ export default function App() {
         </nav>
  
         {/* SAFEPIN FLOATING CHAT TRIGGER CHIP (Pulsing green orb) */}
-        {currentScreen !== "admin" && (
-          <div className="absolute bottom-28 left-5 z-30">
-            <button
-              onClick={() => setChatOpen(true)}
-              className="w-12 h-12 rounded-full bg-[#1B2620]/95 backdrop-blur-md border border-[#7FA396]/35 text-xl flex items-center justify-center hover:scale-105 active:scale-95 transition-transform shadow-xl shadow-black/30"
-              title="Obrolan SafePin"
-            >
-              🦉
-              <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-[#7FA396] rounded-full border-2 border-[#1B2620] animate-pulse"></span>
-            </button>
-          </div>
-        )}
+        <div className="absolute bottom-28 left-5 z-30">
+          <button
+            onClick={() => setChatOpen(true)}
+            className="w-12 h-12 rounded-full bg-[#1B2620]/95 backdrop-blur-md border border-[#7FA396]/35 text-xl flex items-center justify-center hover:scale-105 active:scale-95 transition-transform shadow-xl shadow-black/30"
+            title="Obrolan SafePin"
+          >
+            🦉
+            <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-[#7FA396] rounded-full border-2 border-[#1B2620] animate-pulse"></span>
+          </button>
+        </div>
 
         {/* SAFEPIN CHAT SHEET MODAL OVERLAY */}
         <SafePinChat

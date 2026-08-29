@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { ID_STRINGS, EN_STRINGS } from "../data/locales";
 import { SupportResource, ChatSession, ChatMessage } from "../types";
 import { LogOut, Check, X, Edit2, Trash2, Save, MessageSquare, ShieldAlert, Database, History, RefreshCw } from "lucide-react";
+import { safeGetStorage, safeSetStorage, safeRemoveStorage } from "../lib/storage";
 import {
   getAdminCredentialsFromFirestore,
   getPendingSubmissionsFromFirestore,
@@ -72,7 +73,7 @@ export default function AdminPanel({ language, onBackToApp, onLanguageToggle, on
         if (data && data.success) {
           setToken(data.token);
           setIsLoggedIn(true);
-          localStorage.setItem("safemap_admin_token", data.token);
+          safeSetStorage("safemap_admin_token", data.token);
           setLoading(false);
           return;
         } else if (data && data.error) {
@@ -91,7 +92,7 @@ export default function AdminPanel({ language, onBackToApp, onLanguageToggle, on
         const adminToken = creds.token || "safemap-admin-auth-secret-token-2026";
         setToken(adminToken);
         setIsLoggedIn(true);
-        localStorage.setItem("safemap_admin_token", adminToken);
+        safeSetStorage("safemap_admin_token", adminToken);
       } else {
         setLoginError(language === "en" ? "Incorrect username or password." : "Username atau password salah.");
       }
@@ -107,7 +108,7 @@ export default function AdminPanel({ language, onBackToApp, onLanguageToggle, on
   const handleLogout = () => {
     setIsLoggedIn(false);
     setToken("");
-    localStorage.removeItem("safemap_admin_token");
+    safeRemoveStorage("safemap_admin_token");
     onBackToApp();
   };
 
@@ -214,7 +215,7 @@ export default function AdminPanel({ language, onBackToApp, onLanguageToggle, on
   };
 
   useEffect(() => {
-    const savedToken = localStorage.getItem("safemap_admin_token");
+    const savedToken = safeGetStorage("safemap_admin_token");
     if (savedToken) {
       setToken(savedToken);
       setIsLoggedIn(true);

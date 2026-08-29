@@ -558,17 +558,17 @@ export default function Onboarding({
   };
 
   return (
-    <div className="fixed inset-0 bg-[#1B2620] z-40 flex flex-col items-center justify-center p-6 overflow-hidden">
+    <div className="fixed inset-0 bg-[#1B2620] z-40 flex flex-col items-center justify-between p-3 sm:p-6 overflow-y-auto min-h-screen">
       
       {/* Background Atmosphere Blur Circles */}
       <div className="absolute top-1/4 left-1/4 w-72 h-72 bg-[#7FA396]/15 rounded-full filter blur-[100px] pointer-events-none animate-glow-slow"></div>
       <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-[#C9A66B]/10 rounded-full filter blur-[120px] pointer-events-none animate-glow-slower"></div>
 
       {/* Dynamic Main Container (width scales beautifully for education screen) */}
-      <div className={`w-full ${viewingEducation ? "max-w-3xl" : "max-w-[540px]"} h-full flex flex-col justify-between relative z-10 transition-all duration-300`}>
+      <div className={`w-full ${viewingEducation ? "max-w-3xl" : "max-w-[540px]"} min-h-full flex flex-col justify-between relative z-10 transition-all duration-300`}>
         
         {/* Onboarding Header with persistent language toggle & desktop actions */}
-        <div className="flex items-center justify-between pt-4 pb-2 w-full shrink-0">
+        <div className="flex items-center justify-between pt-2 sm:pt-4 pb-2 w-full shrink-0">
           <div className="flex items-center gap-2">
             <SavePinLogo size="sm" />
             <span className="font-display font-bold text-lg tracking-tight text-[#F0EEE8]">SafeMap</span>
@@ -611,16 +611,16 @@ export default function Onboarding({
         </div>
 
         {/* Slide Content Box */}
-        <div className="flex-1 flex flex-col items-center justify-center my-6 min-h-0 relative">
+        <div className="flex-1 flex flex-col items-center justify-center my-3 sm:my-6 relative w-full">
           <AnimatePresence mode="wait">
             {!viewingQuestionnaire && !viewingEducation ? (
               <motion.div
                 key={`slide-${slideIndex}`}
-                initial={{ opacity: 0, x: 50 }}
+                initial={{ opacity: 0, x: 30 }}
                 animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -50 }}
-                transition={{ duration: 0.4, ease: "easeInOut" }}
-                className="w-full flex flex-col items-center text-center relative px-4"
+                exit={{ opacity: 0, x: -30 }}
+                transition={{ duration: 0.3, ease: "easeInOut" }}
+                className="w-full flex flex-col items-center text-center relative px-2 sm:px-4"
               >
                 {slideIndex === 0 && (
                   <div className="flex flex-col items-center justify-center animate-fade-in py-4">
@@ -1104,7 +1104,7 @@ export default function Onboarding({
 
         {/* Footer Area with Dots & Action Buttons */}
         {!viewingQuestionnaire && !viewingEducation && (
-          <div className="pb-8 shrink-0 w-full">
+          <div className="pb-3 sm:pb-8 shrink-0 w-full">
             {/* Action Footer Grid */}
             <div className="grid grid-cols-3 items-center w-full">
               {/* Left Action (Skip or Back) */}
@@ -1112,7 +1112,7 @@ export default function Onboarding({
                 {slideIndex === 4 ? (
                   <button
                     onClick={handlePrev}
-                    className="py-3 text-sm text-[#8A9590] hover:text-[#F0EEE8] font-semibold transition-colors active:scale-95 flex items-center gap-1 cursor-pointer"
+                    className="py-2.5 sm:py-3 text-xs sm:text-sm text-[#8A9590] hover:text-[#F0EEE8] font-semibold transition-colors active:scale-95 flex items-center gap-1 cursor-pointer"
                   >
                     <span>←</span>
                     <span>{language === "en" ? "Back" : "Kembali"}</span>
@@ -1120,7 +1120,7 @@ export default function Onboarding({
                 ) : (
                   <button
                     onClick={handleSkipIntro}
-                    className="py-3 text-sm text-[#8A9590] hover:text-[#F0EEE8] font-semibold transition-colors active:scale-95 cursor-pointer"
+                    className="py-2.5 sm:py-3 text-xs sm:text-sm text-[#8A9590] hover:text-[#F0EEE8] font-semibold transition-colors active:scale-95 cursor-pointer"
                   >
                     {strings.onboarding.skip}
                   </button>
@@ -1128,13 +1128,13 @@ export default function Onboarding({
               </div>
 
               {/* Center Slider Progress Dots */}
-              <div className="justify-self-center flex gap-2">
+              <div className="justify-self-center flex gap-1.5 sm:gap-2">
                 {slidesArray.map((_, idx) => (
                   <button
                     key={idx}
                     onClick={() => setSlideIndex(idx)}
-                    className={`h-2.5 rounded-full transition-all duration-300 cursor-pointer ${
-                      slideIndex === idx ? "w-6 bg-[#7FA396]" : "w-2.5 bg-[#2C3D34]"
+                    className={`h-2 sm:h-2.5 rounded-full transition-all duration-300 cursor-pointer ${
+                      slideIndex === idx ? "w-5 sm:w-6 bg-[#7FA396]" : "w-2 sm:w-2.5 bg-[#2C3D34]"
                     }`}
                   />
                 ))}
@@ -1145,14 +1145,14 @@ export default function Onboarding({
                 {slideIndex === 4 ? (
                   <button
                     onClick={onComplete}
-                    className="px-6 py-3 bg-[#E0703D] hover:bg-[#F0804D] text-white font-bold rounded-full text-sm shadow-lg shadow-[#E0703D]/10 flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
+                    className="px-4 sm:px-6 py-2.5 sm:py-3 bg-[#E0703D] hover:bg-[#F0804D] text-white font-bold rounded-full text-xs sm:text-sm shadow-lg shadow-[#E0703D]/10 flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
                   >
                     <span>{language === "en" ? "Open Map ✓" : "Buka Peta ✓"}</span>
                   </button>
                 ) : (
                   <button
                     onClick={handleNext}
-                    className="px-6 py-3 bg-[#7FA396] hover:bg-[#9DBDB0] text-[#1B2620] font-bold rounded-full text-sm shadow-lg shadow-[#7FA396]/10 flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
+                    className="px-4 sm:px-6 py-2.5 sm:py-3 bg-[#7FA396] hover:bg-[#9DBDB0] text-[#1B2620] font-bold rounded-full text-xs sm:text-sm shadow-lg shadow-[#7FA396]/10 flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
                   >
                     <span>{strings.onboarding.next}</span>
                     <span>→</span>

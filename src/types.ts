@@ -38,4 +38,5 @@ export type ScreenType =
   | "quiz-question" 
   | "quiz-result" 
   | "about" 
-  | "admin";
+  | "admin"
+  | "emergency";

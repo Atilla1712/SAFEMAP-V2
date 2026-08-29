@@ -151,11 +151,12 @@ export default function SafePinChat({
       const updatedMessages = [...newMessages, botMsg];
       setMessages(updatedMessages);
 
-      const updatedChat = {
-        id: sessionId,
+      const updatedChat: ChatSession = {
         sessionId,
         messages: updatedMessages,
         needsHuman: isHumanRequested,
+        language,
+        createdAt: session?.createdAt || new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
       setSession(updatedChat);
@@ -197,11 +198,12 @@ export default function SafePinChat({
     const updatedMessages = [...messages, systemNotice];
     setMessages(updatedMessages);
 
-    const updatedChat = {
-      id: sessionId,
+    const updatedChat: ChatSession = {
       sessionId,
       messages: updatedMessages,
       needsHuman: true,
+      language,
+      createdAt: session?.createdAt || new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
     setSession(updatedChat);

@@ -579,7 +579,7 @@ export interface QuizResult {
   breakdown: { [dim: string]: number };
   actionsId: string[];
   actionsEn: string[];
-  contacts: { name: string; number: string; desc: string }[];
+  contacts: { name: string; number: string; desc: string; descEn?: string }[];
 }
 
 export function calculateQuizResult(type: string, answers: { [qId: string]: number }, triggerCount: number): QuizResult {

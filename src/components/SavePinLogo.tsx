@@ -6,11 +6,11 @@ interface SavePinLogoProps {
 }
 
 export default function SavePinLogo({ className = "", size = "md" }: SavePinLogoProps) {
-  let sizeClass = "w-16 h-18";
+  let sizeClass = "w-14 h-16";
   if (size === "sm") sizeClass = "w-7 h-8";
-  if (size === "md") sizeClass = "w-16 h-18";
-  if (size === "lg") sizeClass = "w-24 h-26";
-  if (size === "xl") sizeClass = "w-32 h-36";
+  if (size === "md") sizeClass = "w-14 h-16";
+  if (size === "lg") sizeClass = "w-20 h-24";
+  if (size === "xl") sizeClass = "w-28 h-32";
   if (size === "custom") sizeClass = "";
 
   return (
