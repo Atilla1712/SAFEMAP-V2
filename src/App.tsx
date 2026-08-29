@@ -74,10 +74,8 @@ export default function App() {
     return map[dim] || dim;
   };
 
-  // Onboarding & Router States
-  const [isOnboarded, setIsOnboarded] = useState<boolean>(() => {
-    return safeGetStorage("safemap_onboarded", "false") === "true";
-  });
+  // Onboarding & Router States (defaults to false so homepage slides always appear on reload)
+  const [isOnboarded, setIsOnboarded] = useState<boolean>(false);
   const [onboardingSlide, setOnboardingSlide] = useState<number>(0);
   const [currentScreen, setCurrentScreen] = useState<ScreenType>("home");
 
@@ -194,7 +192,6 @@ export default function App() {
 
   const handleOnboardingComplete = () => {
     setIsOnboarded(true);
-    safeSetStorage("safemap_onboarded", "true");
     setCurrentScreen("home");
   };
 
@@ -419,7 +416,6 @@ export default function App() {
         onComplete={handleOnboardingComplete}
         onSelectCategory={(category) => {
           setIsOnboarded(true);
-          safeSetStorage("safemap_onboarded", "true");
           startQuiz(category);
         }}
         language={language}
@@ -460,12 +456,19 @@ export default function App() {
         {/* UPPER HEADER BAR */}
         <header className="glass-navbar sticky top-0 z-20 w-full shrink-0">
           <div className="w-full px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
+            <button
+              onClick={() => {
+                setIsOnboarded(false);
+                setOnboardingSlide(0);
+              }}
+              className="flex items-center gap-2.5 hover:opacity-80 transition-opacity cursor-pointer text-left"
+              title={language === "en" ? "Open homepage slides" : "Buka slide pengenalan"}
+            >
               <SavePinLogo size="sm" />
               <span className="font-display font-extrabold text-lg tracking-tight text-[#F0EEE8]">
                 SafeMap
               </span>
-            </div>
+            </button>
 
             <div className="flex items-center gap-2.5 sm:gap-3">
               {/* Back Button */}
@@ -1153,11 +1156,21 @@ export default function App() {
                 </div>
               </div>
 
-              {/* SECURE MODERATOR LOGIN LINK */}
-              <div className="pt-6 border-t border-white/5 text-center">
+              {/* RE-OPEN INTRO SLIDES & SECURE MODERATOR LOGIN LINK */}
+              <div className="pt-6 border-t border-white/5 flex flex-col sm:flex-row items-center justify-center gap-3 text-center">
+                <button
+                  onClick={() => {
+                    setIsOnboarded(false);
+                    setOnboardingSlide(0);
+                  }}
+                  className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-[#2C3D34] hover:bg-[#3D5247] text-xs text-[#F0EEE8] font-bold border border-[#7FA396]/20 transition-all active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer shadow-md"
+                >
+                  <span>✨</span>
+                  <span>{language === "en" ? "View Homepage Intro Slides" : "Lihat Slide Pengenalan Beranda"}</span>
+                </button>
                 <button
                   onClick={() => setCurrentScreen("admin")}
-                  className="px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-[10px] text-[#8A9590] font-semibold border border-white/5 transition-all active:scale-95"
+                  className="w-full sm:w-auto px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-[10px] text-[#8A9590] font-semibold border border-white/5 transition-all active:scale-95 cursor-pointer"
                 >
                   🛡️ {strings.about.adminLink}
                 </button>
