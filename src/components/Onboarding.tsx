@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { ID_STRINGS, EN_STRINGS } from "../data/locales";
 import { Shield, Smartphone, BarChart3, AlertOctagon, ArrowLeft, ChevronRight, X, Info, Map, Lock, BookOpen } from "lucide-react";
@@ -380,6 +380,42 @@ export default function Onboarding({
   const [selectedEduCategory, setSelectedEduCategory] = useState<"physical" | "verbal" | "kdrt" | "cyber">("physical");
   const [activeFact, setActiveFact] = useState<{ title: string; source: string; description: string } | null>(null);
 
+  // Touch swipe support for smooth mobile slide gestures
+  const touchStartXRef = useRef<number | null>(null);
+  const touchStartYRef = useRef<number | null>(null);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartXRef.current = e.touches[0].clientX;
+    touchStartYRef.current = e.touches[0].clientY;
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartXRef.current === null || touchStartYRef.current === null) return;
+    const deltaX = e.changedTouches[0].clientX - touchStartXRef.current;
+    const deltaY = e.changedTouches[0].clientY - touchStartYRef.current;
+
+    // Detect horizontal swipe if delta is > 40px and predominantly horizontal
+    if (Math.abs(deltaX) > 40 && Math.abs(deltaX) > Math.abs(deltaY) * 1.2) {
+      if (deltaX < 0) {
+        // Swiped left -> Go to Next Slide
+        if (!viewingEducation && !viewingQuestionnaire) {
+          if (slideIndex < totalSlides - 1) {
+            setSlideIndex(slideIndex + 1);
+          }
+        }
+      } else {
+        // Swiped right -> Go to Prev Slide
+        if (!viewingEducation && !viewingQuestionnaire) {
+          if (slideIndex > 0) {
+            setSlideIndex(slideIndex - 1);
+          }
+        }
+      }
+    }
+    touchStartXRef.current = null;
+    touchStartYRef.current = null;
+  };
+
   const handleNext = () => {
     if (slideIndex < totalSlides - 1) {
       setSlideIndex(slideIndex + 1);
@@ -558,612 +594,622 @@ export default function Onboarding({
   };
 
   return (
-    <div className="fixed inset-0 bg-[#1B2620] z-40 flex flex-col items-center justify-between p-3 sm:p-6 overflow-y-auto min-h-screen">
-      
+    <div 
+      className="fixed inset-0 z-40 bg-[#1B2620] flex flex-col justify-between overflow-hidden h-[100dvh] w-full select-none"
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+    >
       {/* Background Atmosphere Blur Circles */}
       <div className="absolute top-1/4 left-1/4 w-72 h-72 bg-[#7FA396]/15 rounded-full filter blur-[100px] pointer-events-none animate-glow-slow"></div>
       <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-[#C9A66B]/10 rounded-full filter blur-[120px] pointer-events-none animate-glow-slower"></div>
 
-      {/* Dynamic Main Container (width scales beautifully for education screen) */}
-      <div className={`w-full ${viewingEducation ? "max-w-3xl" : "max-w-[540px]"} min-h-full flex flex-col justify-between relative z-10 transition-all duration-300`}>
-        
-        {/* Onboarding Header with persistent language toggle & desktop actions */}
-        <div className="flex items-center justify-between pt-2 sm:pt-4 pb-2 w-full shrink-0">
-          <div className="flex items-center gap-2">
-            <SavePinLogo size="sm" />
-            <span className="font-display font-bold text-lg tracking-tight text-[#F0EEE8]">SafeMap</span>
-          </div>
-          
-          <div className="flex items-center gap-2">
-            {viewingEducation && (
-              <div className="flex items-center gap-1.5 mr-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setViewingQuestionnaire(true);
-                    setViewingEducation(false);
-                  }}
-                  className="px-2.5 py-1 bg-[#1C2521]/80 border border-white/5 text-xs text-[#B8C2BC] hover:text-[#7FA396] hover:border-[#7FA396]/30 font-semibold rounded-lg flex items-center gap-1 active:scale-95 transition-all"
-                >
-                  <span className="text-[10px]">📄</span>
-                  <span>{language === "en" ? "Quiz" : "Kuesioner"}</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={onComplete}
-                  className="px-2.5 py-1 bg-[#7FA396]/15 border border-[#7FA396]/20 text-xs text-[#7FA396] hover:bg-[#7FA396] hover:text-[#1B2620] font-bold rounded-lg flex items-center gap-1 active:scale-95 transition-all"
-                >
-                  <span className="text-[10px]">🗺️</span>
-                  <span>{language === "en" ? "Open Map" : "Buka Peta"}</span>
-                </button>
-              </div>
-            )}
-
-            {/* Language Toggle */}
-            <button
-              onClick={() => setLanguage(language === "id" ? "en" : "id")}
-              className="px-3 py-1.5 rounded-full text-xs font-semibold glass-panel text-[#F0EEE8] hover:text-[#7FA396] transition-all flex items-center gap-1.5 active:scale-95"
-            >
-              <span>🌐</span>
-              <span>{language === "id" ? "ID | EN" : "EN | ID"}</span>
-            </button>
-          </div>
+      {/* FIXED TOP HEADER (Always in view) */}
+      <header className="shrink-0 w-full max-w-3xl mx-auto px-4 py-2.5 sm:py-4 flex items-center justify-between z-20">
+        <div className="flex items-center gap-2">
+          <SavePinLogo size="sm" />
+          <span className="font-display font-bold text-base sm:text-lg tracking-tight text-[#F0EEE8]">SafeMap</span>
         </div>
-
-        {/* Slide Content Box */}
-        <div className="flex-1 flex flex-col items-center justify-center my-3 sm:my-6 relative w-full">
-          <AnimatePresence mode="wait">
-            {!viewingQuestionnaire && !viewingEducation ? (
-              <motion.div
-                key={`slide-${slideIndex}`}
-                initial={{ opacity: 0, x: 30 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -30 }}
-                transition={{ duration: 0.3, ease: "easeInOut" }}
-                className="w-full flex flex-col items-center text-center relative px-2 sm:px-4"
+        
+        <div className="flex items-center gap-2">
+          {viewingEducation && (
+            <div className="flex items-center gap-1.5 mr-1">
+              <button
+                type="button"
+                onClick={() => {
+                  setViewingQuestionnaire(true);
+                  setViewingEducation(false);
+                }}
+                className="px-2.5 py-1 bg-[#1C2521]/90 border border-white/10 text-xs text-[#B8C2BC] hover:text-[#7FA396] hover:border-[#7FA396]/30 font-semibold rounded-lg flex items-center gap-1 active:scale-95 transition-all cursor-pointer"
               >
-                {slideIndex === 0 && (
-                  <div className="flex flex-col items-center justify-center animate-fade-in py-4">
-                    <span className="font-mono tracking-widest text-[#7FA396] text-[11px] sm:text-xs font-extrabold mb-4 uppercase">
-                      {language === "en" ? "WELCOME" : "SELAMAT DATANG"}
-                    </span>
-                    <div className="flex items-center justify-center gap-3 sm:gap-4 mb-6">
-                      <h2 className="font-display font-extrabold text-4xl sm:text-5xl text-[#F0EEE8] tracking-tight">
-                        SafeMap
-                      </h2>
-                      <SavePinLogo size="lg" className="hover:scale-105 transition-transform" />
-                    </div>
-                    <p className="text-[#B8C2BC] text-sm sm:text-base leading-relaxed max-w-[420px] font-sans">
-                      {language === "en" ? (
-                        <>
-                          An interactive map platform that helps survivors of violence find the nearest{" "}
-                          <span className="text-[#7FA396] font-semibold">shelter</span>,{" "}
-                          <span className="text-[#7FA396] font-semibold">legal aid</span>,{" "}
-                          <span className="text-[#7FA396] font-semibold">clinics</span>, and{" "}
-                          <span className="text-[#7FA396] font-semibold">support communities</span> — free, anonymous, no login required.
-                        </>
-                      ) : (
-                        <>
-                          Platform peta interaktif yang membantu penyintas kekerasan menemukan{" "}
-                          <span className="text-[#7FA396] font-semibold">rumah aman (shelter)</span>,{" "}
-                          <span className="text-[#7FA396] font-semibold">bantuan hukum</span>,{" "}
-                          <span className="text-[#7FA396] font-semibold">klinik</span>, dan{" "}
-                          <span className="text-[#7FA396] font-semibold">komunitas dukungan</span> terdekat — gratis, anonim, tanpa login.
-                        </>
-                      )}
-                    </p>
-                  </div>
-                )}
-
-                {slideIndex === 1 && (
-                  <div className="flex flex-col items-center justify-center animate-fade-in w-full py-2">
-                    <span className="font-mono tracking-widest text-[#7FA396] text-[10px] sm:text-[11px] font-bold mb-2 uppercase">
-                      {language === "en" ? "OUR FOCUS" : "FOKUS KAMI"}
-                    </span>
-                    <h2 className="font-display font-bold text-xl sm:text-2xl text-[#F0EEE8] mb-6">
-                      {language === "en" ? "4 Types of Violence We Address" : "4 Jenis Kekerasan yang Kami Tangani"}
-                    </h2>
-                    
-                    <div className="grid grid-cols-2 gap-3.5 w-full mb-6 max-w-[440px]">
-                      <div className="p-4.5 rounded-2xl bg-[#1C2521] border border-white/5 flex flex-col items-center justify-center text-center shadow-lg hover:border-[#7FA396]/20 transition-all duration-300">
-                        <span className="text-3xl mb-1">👊</span>
-                        <span className="font-bold text-[#F0EEE8] text-xs">
-                          {language === "en" ? "Physical" : "Fisik"}
-                        </span>
-                      </div>
-                      <div className="p-4.5 rounded-2xl bg-[#1C2521] border border-white/5 flex flex-col items-center justify-center text-center shadow-lg hover:border-[#7FA396]/20 transition-all duration-300">
-                        <span className="text-3xl mb-1">🗣️</span>
-                        <span className="font-bold text-[#F0EEE8] text-xs">
-                          {language === "en" ? "Verbal" : "Verbal"}
-                        </span>
-                      </div>
-                      <div className="p-4.5 rounded-2xl bg-[#1C2521] border border-white/5 flex flex-col items-center justify-center text-center shadow-lg hover:border-[#7FA396]/20 transition-all duration-300">
-                        <span className="text-3xl mb-1">🏠</span>
-                        <span className="font-bold text-[#F0EEE8] text-xs">
-                          {language === "en" ? "Domestic Violence" : "KDRT"}
-                        </span>
-                      </div>
-                      <div className="p-4.5 rounded-2xl bg-[#1C2521] border border-white/5 flex flex-col items-center justify-center text-center shadow-lg hover:border-[#7FA396]/20 transition-all duration-300">
-                        <span className="text-3xl mb-1">💻</span>
-                        <span className="font-bold text-[#F0EEE8] text-xs">
-                          {language === "en" ? "Cyber" : "Siber"}
-                        </span>
-                      </div>
-                    </div>
-
-                    <p className="text-xs text-[#8A9590] leading-relaxed max-w-[380px]">
-                      {language === "en"
-                        ? "These four types are the most common forms of violence, yet they receive the least adequate response in Indonesia."
-                        : "Keempat jenis ini adalah bentuk kekerasan yang paling umum terjadi, namun menerima penanganan yang paling minim di Indonesia."}
-                    </p>
-                  </div>
-                )}
-
-                {slideIndex === 2 && (
-                  <div className="flex flex-col items-center justify-center animate-fade-in w-full py-2">
-                    <span className="font-mono tracking-widest text-[#7FA396] text-[10px] sm:text-[11px] font-bold mb-2 uppercase">
-                      {language === "en" ? "WHY THIS MATTERS" : "MENGAPA INI PENTING"}
-                    </span>
-                    <h2 className="font-display font-bold text-xl sm:text-2xl text-[#F0EEE8] mb-6">
-                      {language === "en" ? "A Real Problem, Not an Assumption" : "Masalah Nyata, Bukan Asumsi"}
-                    </h2>
-
-                    <div className="grid grid-cols-3 gap-2.5 w-full mb-6 max-w-[460px]">
-                      <div className="p-4 rounded-2xl bg-[#1C2521] border border-white/5 flex flex-col items-center justify-center text-center shadow-lg hover:border-[#7FA396]/15 transition-all duration-300">
-                        <span className="font-display font-extrabold text-2xl text-[#7FA396] tracking-tight">1 : 3</span>
-                        <span className="text-[9.5px] text-[#B8C2BC] leading-snug mt-1.5">
-                          {language === "en" ? "Women abused" : "Perempuan rentan"}
-                        </span>
-                      </div>
-                      <div className="p-4 rounded-2xl bg-[#1C2521] border border-white/5 flex flex-col items-center justify-center text-center shadow-lg hover:border-[#7FA396]/15 transition-all duration-300">
-                        <span className="font-display font-extrabold text-2xl text-[#7FA396] tracking-tight">65%</span>
-                        <span className="text-[9.5px] text-[#B8C2BC] leading-snug mt-1.5">
-                          {language === "en" ? "Unreported" : "Tak melapor"}
-                        </span>
-                      </div>
-                      <div className="p-4 rounded-2xl bg-[#1C2521] border border-white/5 flex flex-col items-center justify-center text-center shadow-lg hover:border-[#7FA396]/15 transition-all duration-300">
-                        <span className="font-display font-extrabold text-2xl text-[#7FA396] tracking-tight">3x</span>
-                        <span className="text-[9.5px] text-[#B8C2BC] leading-snug mt-1.5">
-                          {language === "en" ? "Risk in crisis" : "Risiko krisis"}
-                        </span>
-                      </div>
-                    </div>
-
-                    <p className="text-xs text-[#8A9590] leading-relaxed max-w-[380px]">
-                      {language === "en"
-                        ? "2023 Komnas Perempuan data shows violence rates keep rising every year, while access to help remains very limited."
-                        : "Data Komnas Perempuan 2023 menunjukkan angka kekerasan terus meningkat setiap tahun, sementara akses bantuan masih sangat terbatas."}
-                    </p>
-                  </div>
-                )}
-
-                {slideIndex === 3 && (
-                  <div className="flex flex-col items-center justify-center animate-fade-in w-full py-2">
-                    <span className="font-mono tracking-widest text-[#7FA396] text-[10px] sm:text-[11px] font-bold mb-2 uppercase">
-                      {language === "en" ? "WHY SAFEMAP" : "MENGAPA SAFEMAP"}
-                    </span>
-                    <h2 className="font-display font-bold text-xl sm:text-2xl text-[#F0EEE8] mb-6">
-                      {language === "en" ? "A Gap Nobody Has Filled" : "Celah yang Belum Terisi"}
-                    </h2>
-
-                    <div className="flex flex-col gap-3 w-full max-w-[450px] mb-2 text-left">
-                      <div className="p-3.5 rounded-2xl bg-[#1C2521] border border-white/5 flex items-center gap-4 shadow-lg hover:border-[#7FA396]/15 transition-all duration-300">
-                        <div className="w-10 h-10 rounded-full bg-[#7FA396]/10 flex items-center justify-center text-[#7FA396] text-lg shrink-0">
-                          🗺️
-                        </div>
-                        <div>
-                          <h4 className="font-bold text-xs text-[#F0EEE8]">
-                            {language === "en" ? "Hyperlocal Map" : "Peta Hiperlokal"}
-                          </h4>
-                          <p className="text-[10.5px] text-[#8A9590] leading-snug mt-0.5">
-                            {language === "en" ? "Nearest shelter & legal aid from your current location" : "Hunian aman & bantuan hukum terdekat dari lokasi Anda"}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="p-3.5 rounded-2xl bg-[#1C2521] border border-white/5 flex items-center gap-4 shadow-lg hover:border-[#7FA396]/15 transition-all duration-300">
-                        <div className="w-10 h-10 rounded-full bg-[#7FA396]/10 flex items-center justify-center text-[#7FA396] text-lg shrink-0">
-                          🔒
-                        </div>
-                        <div>
-                          <h4 className="font-bold text-xs text-[#F0EEE8]">
-                            {language === "en" ? "Zero Tracking" : "Tanpa Pelacakan"}
-                          </h4>
-                          <p className="text-[10.5px] text-[#8A9590] leading-snug mt-0.5">
-                            {language === "en" ? "No account, no logs, and a functional Calculator mask" : "Tanpa akun, tanpa log, dilengkapi samaran Kalkulator"}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="p-3.5 rounded-2xl bg-[#1C2521] border border-white/5 flex items-center gap-4 shadow-lg hover:border-[#7FA396]/15 transition-all duration-300">
-                        <div className="w-10 h-10 rounded-full bg-[#7FA396]/10 flex items-center justify-center text-[#7FA396] text-lg shrink-0">
-                          📚
-                        </div>
-                        <div>
-                          <h4 className="font-bold text-xs text-[#F0EEE8]">
-                            {language === "en" ? "Data-Based Education" : "Edukasi Berbasis Data"}
-                          </h4>
-                          <p className="text-[10.5px] text-[#8A9590] leading-snug mt-0.5">
-                            {language === "en" ? "Recognize signs of abuse before it's too late with references" : "Kenali tanda kekerasan sebelum terlambat dengan rujukan"}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {slideIndex === 4 && (
-                  <div className="flex flex-col items-center justify-center animate-fade-in w-full py-1">
-                    <span className="font-mono tracking-widest text-[#7FA396] text-[10px] sm:text-[11px] font-bold mb-2 uppercase">
-                      {language === "en" ? "YOU ARE NOT ALONE" : "ANDA TIDAK SENDIRI"}
-                    </span>
-                    <h2 className="font-display font-bold text-xl sm:text-2xl text-[#F0EEE8] mb-4">
-                      {language === "en" ? "Recognize. Resist. Recover." : "Kenali. Lawan. Pulih."}
-                    </h2>
-
-                    <SavePinLogo size="xl" className="mb-4 animate-bounce-slow" />
-
-                    <p className="text-xs text-[#B8C2BC] leading-relaxed max-w-[420px] mb-6 text-center">
-                      {language === "en"
-                        ? "Take control of your journey. Explore educational resources on the four types of abuse, complete a private screening questionnaire, or head straight to the map below."
-                        : "Ambil kendali atas pemulihan Anda. Pelajari tanda-tanda dari empat jenis kekerasan, lakukan kuesioner skrining mandiri, atau langsung buka peta di bawah."}
-                    </p>
-
-                    <div className="grid grid-cols-2 gap-4 w-full max-w-[460px]">
-                      <button
-                        onClick={() => setViewingEducation(true)}
-                        className="p-4 rounded-xl bg-[#1C2521] border border-white/5 flex flex-col items-center justify-center text-center shadow-lg hover:border-[#7FA396]/30 transition-all duration-300 active:scale-[0.97] cursor-pointer"
-                      >
-                        <span className="text-2xl mb-1.5">📚</span>
-                        <span className="font-bold text-[#F0EEE8] text-xs">
-                          {language === "en" ? "Read Education" : "Mulai Belajar"}
-                        </span>
-                        <span className="text-[10px] text-[#8A9590] mt-1 leading-snug">
-                          {language === "en" ? "Learn signs & data" : "Edukasi & data rujukan"}
-                        </span>
-                      </button>
-
-                      <button
-                        onClick={() => setViewingQuestionnaire(true)}
-                        className="p-4 rounded-xl bg-[#1C2521] border border-white/5 flex flex-col items-center justify-center text-center shadow-lg hover:border-[#7FA396]/30 transition-all duration-300 active:scale-[0.97] cursor-pointer"
-                      >
-                        <span className="text-2xl mb-1.5">📋</span>
-                        <span className="font-bold text-[#F0EEE8] text-xs">
-                          {language === "en" ? "Screening Quiz" : "Kuesioner Skrining"}
-                        </span>
-                        <span className="text-[10px] text-[#8A9590] mt-1 leading-snug">
-                          {language === "en" ? "Assess your situation" : "Asesmen risiko pribadi"}
-                        </span>
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </motion.div>
-            ) : viewingEducation ? (
-              <motion.div
-                key="education"
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -30 }}
-                transition={{ duration: 0.4, ease: "easeInOut" }}
-                className="w-full flex flex-col items-center relative max-h-full overflow-y-auto pr-1"
+                <span className="text-[10px]">📄</span>
+                <span>{language === "en" ? "Quiz" : "Kuesioner"}</span>
+              </button>
+              <button
+                type="button"
+                onClick={onComplete}
+                className="px-2.5 py-1 bg-[#7FA396]/20 border border-[#7FA396]/30 text-xs text-[#7FA396] hover:bg-[#7FA396] hover:text-[#1B2620] font-bold rounded-lg flex items-center gap-1 active:scale-95 transition-all cursor-pointer"
               >
-                {/* Back Button */}
-                <div className="w-full flex items-center gap-2 mb-4 self-start">
-                  <button
-                    onClick={handlePrev}
-                    className="p-1.5 rounded-lg bg-[#1B2620]/80 hover:bg-[#2C3D34] text-[#B8C2BC] border border-white/5 active:scale-95 transition-all"
-                  >
-                    <ArrowLeft className="w-4 h-4" />
-                  </button>
-                  <span className="text-[10px] font-bold text-[#7FA396] uppercase tracking-wider font-mono">
-                    {language === "en" ? "Back to Slides" : "Kembali ke Slides"}
+                <span className="text-[10px]">🗺️</span>
+                <span>{language === "en" ? "Map" : "Peta"}</span>
+              </button>
+            </div>
+          )}
+
+          {!viewingEducation && !viewingQuestionnaire && (
+            <button
+              onClick={handleSkipIntro}
+              className="px-2.5 py-1 text-xs text-[#8A9590] hover:text-[#F0EEE8] font-semibold transition-colors cursor-pointer active:scale-95 mr-1"
+            >
+              {strings.onboarding.skip}
+            </button>
+          )}
+
+          {/* Language Toggle */}
+          <button
+            onClick={() => setLanguage(language === "id" ? "en" : "id")}
+            className="px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs font-semibold glass-panel text-[#F0EEE8] hover:text-[#7FA396] transition-all flex items-center gap-1 active:scale-95 cursor-pointer"
+          >
+            <span>🌐</span>
+            <span>{language === "id" ? "ID | EN" : "EN | ID"}</span>
+          </button>
+        </div>
+      </header>
+
+      {/* MAIN SCROLLABLE CONTENT BODY */}
+      <main className={`flex-1 min-h-0 w-full ${viewingEducation ? "max-w-3xl" : "max-w-xl"} mx-auto px-3 sm:px-6 py-2 overflow-y-auto overscroll-contain flex flex-col items-center justify-center relative z-10 touch-pan-y`}>
+        <AnimatePresence mode="wait">
+          {!viewingQuestionnaire && !viewingEducation ? (
+            <motion.div
+              key={`slide-${slideIndex}`}
+              initial={{ opacity: 0, x: 25 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -25 }}
+              transition={{ duration: 0.25, ease: "easeInOut" }}
+              className="w-full flex flex-col items-center text-center my-auto py-2"
+            >
+              {/* SLIDE 0: WELCOME */}
+              {slideIndex === 0 && (
+                <div className="flex flex-col items-center justify-center w-full max-w-[440px] px-2">
+                  <span className="font-mono tracking-widest text-[#7FA396] text-[10px] sm:text-xs font-extrabold mb-2 sm:mb-4 uppercase">
+                    {language === "en" ? "WELCOME" : "SELAMAT DATANG"}
                   </span>
+                  <div className="flex items-center justify-center gap-3 sm:gap-4 mb-3 sm:mb-5">
+                    <h2 className="font-display font-extrabold text-3xl sm:text-5xl text-[#F0EEE8] tracking-tight">
+                      SafeMap
+                    </h2>
+                    <SavePinLogo size="md" className="hover:scale-105 transition-transform shrink-0" />
+                  </div>
+                  <p className="text-[#B8C2BC] text-xs sm:text-sm leading-relaxed max-w-[380px] font-sans">
+                    {language === "en" ? (
+                      <>
+                        An interactive map platform that helps survivors of violence find the nearest{" "}
+                        <span className="text-[#7FA396] font-semibold">shelter</span>,{" "}
+                        <span className="text-[#7FA396] font-semibold">legal aid</span>,{" "}
+                        <span className="text-[#7FA396] font-semibold">clinics</span>, and{" "}
+                        <span className="text-[#7FA396] font-semibold">support communities</span> — free, anonymous, no login required.
+                      </>
+                    ) : (
+                      <>
+                        Platform peta interaktif yang membantu penyintas kekerasan menemukan{" "}
+                        <span className="text-[#7FA396] font-semibold">rumah aman (shelter)</span>,{" "}
+                        <span className="text-[#7FA396] font-semibold">bantuan hukum</span>,{" "}
+                        <span className="text-[#7FA396] font-semibold">klinik</span>, dan{" "}
+                        <span className="text-[#7FA396] font-semibold">komunitas dukungan</span> terdekat — gratis, anonim, tanpa login.
+                      </>
+                    )}
+                  </p>
                 </div>
+              )}
 
-                {/* Header details */}
-                <span className="text-[10px] tracking-[0.2em] font-extrabold text-[#7FA396] uppercase mb-1">
-                  {language === "en" ? "ABUSE EDUCATION" : "EDUKASI KEKERASAN"}
-                </span>
-                <h2 className="text-2xl sm:text-3xl font-display font-extrabold text-[#F0EEE8] tracking-tight text-center leading-snug">
-                  {language === "en" ? "Know Before It's Too Late" : "Kenali Sebelum Terlambat"}
-                </h2>
-                <p className="text-xs text-[#8A9590] text-center max-w-lg mt-2 mb-6">
-                  {language === "en" 
-                    ? "Clickable facts — tap colored, dotted text to view live reference data." 
-                    : "Fakta yang bisa diklik — tap teks yang berwarna untuk melihat data terkini dari sumber terpercaya."}
-                </p>
-
-                {/* Horizontal Tab Selector */}
-                <div className="flex flex-wrap items-center justify-center gap-2.5 mb-6">
-                  {eduCategories.map((cat) => {
-                    const isActive = selectedEduCategory === cat.id;
-                    return (
-                      <button
-                        key={cat.id}
-                        onClick={() => setSelectedEduCategory(cat.id)}
-                        className={`py-2 px-4 rounded-full text-xs font-bold border flex items-center gap-1.5 transition-all active:scale-95 ${
-                          isActive
-                            ? "bg-[#7FA396]/10 text-[#7FA396] border-[#7FA396]/40 shadow-md shadow-[#7FA396]/5"
-                            : "bg-[#1B2620]/40 text-[#8A9590] border-white/5 hover:text-[#F0EEE8] hover:border-white/10"
-                        }`}
-                      >
-                        <span>{cat.icon}</span>
-                        <span>{cat.name}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {/* Active Category Card Content */}
-                {activeEduCat && (
-                  <div className="w-full glass-panel-elevated rounded-2xl p-5 sm:p-6 text-left border border-white/5 mb-6 shadow-xl">
-                    {/* Card Header Category name and brief desc */}
-                    <div className="flex items-start gap-4 pb-4 border-b border-white/5 mb-5">
-                      <span className="text-3xl p-3 bg-[#1B2620]/80 rounded-xl border border-white/5 shadow-inner">
-                        {activeEduCat.icon}
+              {/* SLIDE 1: OUR FOCUS */}
+              {slideIndex === 1 && (
+                <div className="flex flex-col items-center justify-center w-full max-w-[440px] px-2">
+                  <span className="font-mono tracking-widest text-[#7FA396] text-[10px] sm:text-xs font-bold mb-1 sm:mb-2 uppercase">
+                    {language === "en" ? "OUR FOCUS" : "FOKUS KAMI"}
+                  </span>
+                  <h2 className="font-display font-bold text-lg sm:text-2xl text-[#F0EEE8] mb-3 sm:mb-5">
+                    {language === "en" ? "4 Types of Violence We Address" : "4 Jenis Kekerasan yang Kami Tangani"}
+                  </h2>
+                  
+                  <div className="grid grid-cols-2 gap-2.5 sm:gap-3.5 w-full mb-3 sm:mb-5">
+                    <div className="p-3 sm:p-4 rounded-xl bg-[#1C2521] border border-white/5 flex flex-col items-center justify-center text-center shadow-lg hover:border-[#7FA396]/20 transition-all duration-300">
+                      <span className="text-2xl sm:text-3xl mb-1">👊</span>
+                      <span className="font-bold text-[#F0EEE8] text-xs">
+                        {language === "en" ? "Physical" : "Fisik"}
                       </span>
+                    </div>
+                    <div className="p-3 sm:p-4 rounded-xl bg-[#1C2521] border border-white/5 flex flex-col items-center justify-center text-center shadow-lg hover:border-[#7FA396]/20 transition-all duration-300">
+                      <span className="text-2xl sm:text-3xl mb-1">🗣️</span>
+                      <span className="font-bold text-[#F0EEE8] text-xs">
+                        {language === "en" ? "Verbal" : "Verbal"}
+                      </span>
+                    </div>
+                    <div className="p-3 sm:p-4 rounded-xl bg-[#1C2521] border border-white/5 flex flex-col items-center justify-center text-center shadow-lg hover:border-[#7FA396]/20 transition-all duration-300">
+                      <span className="text-2xl sm:text-3xl mb-1">🏠</span>
+                      <span className="font-bold text-[#F0EEE8] text-xs">
+                        {language === "en" ? "Domestic Violence" : "KDRT"}
+                      </span>
+                    </div>
+                    <div className="p-3 sm:p-4 rounded-xl bg-[#1C2521] border border-white/5 flex flex-col items-center justify-center text-center shadow-lg hover:border-[#7FA396]/20 transition-all duration-300">
+                      <span className="text-2xl sm:text-3xl mb-1">💻</span>
+                      <span className="font-bold text-[#F0EEE8] text-xs">
+                        {language === "en" ? "Cyber" : "Siber"}
+                      </span>
+                    </div>
+                  </div>
+
+                  <p className="text-[11px] sm:text-xs text-[#8A9590] leading-relaxed max-w-[360px]">
+                    {language === "en"
+                      ? "These four types are the most common forms of violence, yet they receive the least adequate response in Indonesia."
+                      : "Keempat jenis ini adalah bentuk kekerasan yang paling umum terjadi, namun menerima penanganan yang paling minim di Indonesia."}
+                  </p>
+                </div>
+              )}
+
+              {/* SLIDE 2: WHY THIS MATTERS */}
+              {slideIndex === 2 && (
+                <div className="flex flex-col items-center justify-center w-full max-w-[440px] px-2">
+                  <span className="font-mono tracking-widest text-[#7FA396] text-[10px] sm:text-xs font-bold mb-1 sm:mb-2 uppercase">
+                    {language === "en" ? "WHY THIS MATTERS" : "MENGAPA INI PENTING"}
+                  </span>
+                  <h2 className="font-display font-bold text-lg sm:text-2xl text-[#F0EEE8] mb-3 sm:mb-5">
+                    {language === "en" ? "A Real Problem, Not an Assumption" : "Masalah Nyata, Bukan Asumsi"}
+                  </h2>
+
+                  <div className="grid grid-cols-3 gap-2 sm:gap-2.5 w-full mb-3 sm:mb-5">
+                    <div className="p-2.5 sm:p-3.5 rounded-xl bg-[#1C2521] border border-white/5 flex flex-col items-center justify-center text-center shadow-lg hover:border-[#7FA396]/15 transition-all duration-300">
+                      <span className="font-display font-extrabold text-xl sm:text-2xl text-[#7FA396] tracking-tight">1 : 3</span>
+                      <span className="text-[9px] sm:text-[9.5px] text-[#B8C2BC] leading-tight mt-1">
+                        {language === "en" ? "Women abused" : "Perempuan rentan"}
+                      </span>
+                    </div>
+                    <div className="p-2.5 sm:p-3.5 rounded-xl bg-[#1C2521] border border-white/5 flex flex-col items-center justify-center text-center shadow-lg hover:border-[#7FA396]/15 transition-all duration-300">
+                      <span className="font-display font-extrabold text-xl sm:text-2xl text-[#7FA396] tracking-tight">65%</span>
+                      <span className="text-[9px] sm:text-[9.5px] text-[#B8C2BC] leading-tight mt-1">
+                        {language === "en" ? "Unreported" : "Tak melapor"}
+                      </span>
+                    </div>
+                    <div className="p-2.5 sm:p-3.5 rounded-xl bg-[#1C2521] border border-white/5 flex flex-col items-center justify-center text-center shadow-lg hover:border-[#7FA396]/15 transition-all duration-300">
+                      <span className="font-display font-extrabold text-xl sm:text-2xl text-[#7FA396] tracking-tight">3x</span>
+                      <span className="text-[9px] sm:text-[9.5px] text-[#B8C2BC] leading-tight mt-1">
+                        {language === "en" ? "Risk in crisis" : "Risiko krisis"}
+                      </span>
+                    </div>
+                  </div>
+
+                  <p className="text-[11px] sm:text-xs text-[#8A9590] leading-relaxed max-w-[360px]">
+                    {language === "en"
+                      ? "2023 Komnas Perempuan data shows violence rates keep rising every year, while access to help remains very limited."
+                      : "Data Komnas Perempuan 2023 menunjukkan angka kekerasan terus meningkat setiap tahun, sementara akses bantuan masih sangat terbatas."}
+                  </p>
+                </div>
+              )}
+
+              {/* SLIDE 3: WHY SAFEMAP */}
+              {slideIndex === 3 && (
+                <div className="flex flex-col items-center justify-center w-full max-w-[440px] px-2">
+                  <span className="font-mono tracking-widest text-[#7FA396] text-[10px] sm:text-xs font-bold mb-1 sm:mb-2 uppercase">
+                    {language === "en" ? "WHY SAFEMAP" : "MENGAPA SAFEMAP"}
+                  </span>
+                  <h2 className="font-display font-bold text-lg sm:text-2xl text-[#F0EEE8] mb-3 sm:mb-4">
+                    {language === "en" ? "A Gap Nobody Has Filled" : "Celah yang Belum Terisi"}
+                  </h2>
+
+                  <div className="flex flex-col gap-2 sm:gap-2.5 w-full mb-1 text-left">
+                    <div className="p-2.5 sm:p-3 rounded-xl bg-[#1C2521] border border-white/5 flex items-center gap-3 shadow-lg hover:border-[#7FA396]/15 transition-all duration-300">
+                      <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[#7FA396]/10 flex items-center justify-center text-[#7FA396] text-base sm:text-lg shrink-0">
+                        🗺️
+                      </div>
                       <div>
-                        <h3 className="text-lg font-display font-bold text-[#F0EEE8] tracking-tight">
-                          {activeEduCat.title}
-                        </h3>
-                        <p className="text-xs text-[#8A9590] mt-1 leading-relaxed">
-                          {activeEduCat.desc}
+                        <h4 className="font-bold text-xs text-[#F0EEE8]">
+                          {language === "en" ? "Hyperlocal Map" : "Peta Hiperlokal"}
+                        </h4>
+                        <p className="text-[10px] sm:text-[10.5px] text-[#8A9590] leading-tight mt-0.5">
+                          {language === "en" ? "Nearest shelter & legal aid from your location" : "Hunian aman & bantuan hukum terdekat dari lokasi Anda"}
                         </p>
                       </div>
                     </div>
 
-                    {/* Section 1: GAMBARAN UMUM */}
-                    <div className="mb-5">
-                      <h4 className="text-[10px] font-bold text-[#7FA396] uppercase tracking-wider mb-2 font-mono">
-                        {language === "en" ? "GENERAL OVERVIEW" : "GAMBARAN UMUM"}
-                      </h4>
-                      <div className="text-xs text-[#B8C2BC] leading-relaxed font-sans bg-[#1B2620]/20 p-3.5 rounded-xl border border-white/5 whitespace-pre-line">
-                        {renderSegments(activeEduCat.gambaranUmum)}
+                    <div className="p-2.5 sm:p-3 rounded-xl bg-[#1C2521] border border-white/5 flex items-center gap-3 shadow-lg hover:border-[#7FA396]/15 transition-all duration-300">
+                      <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[#7FA396]/10 flex items-center justify-center text-[#7FA396] text-base sm:text-lg shrink-0">
+                        🔒
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-xs text-[#F0EEE8]">
+                          {language === "en" ? "Zero Tracking" : "Tanpa Pelacakan"}
+                        </h4>
+                        <p className="text-[10px] sm:text-[10.5px] text-[#8A9590] leading-tight mt-0.5">
+                          {language === "en" ? "No account, no logs, and a functional Calculator mask" : "Tanpa akun, tanpa log, dilengkapi samaran Kalkulator"}
+                        </p>
                       </div>
                     </div>
 
-                    {/* Section 2: TANDA-TANDA */}
-                    <div className="mb-5">
-                      <h4 className="text-[10px] font-bold text-[#7FA396] uppercase tracking-wider mb-2 font-mono">
-                        {language === "en" ? "SIGNS TO RECOGNIZE" : "TANDA-TANDA YANG PERLU DIKENALI"}
-                      </h4>
-                      <ul className="space-y-1.5">
-                        {activeEduCat.tandaTanda.map((tanda, i) => (
-                          <li key={i} className="text-xs text-[#B8C2BC] flex items-start gap-2.5 leading-relaxed">
-                            <span className="text-[#E0703D] mt-1 text-[10px]">●</span>
-                            <span>{tanda}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-
-                    {/* Section 3: KONTEKS DI INDONESIA */}
-                    <div>
-                      <h4 className="text-[10px] font-bold text-[#7FA396] uppercase tracking-wider mb-2 font-mono">
-                        {language === "en" ? "CONTEXT IN INDONESIA" : "KONTEKS DI INDONESIA"}
-                      </h4>
-                      <div className="text-xs text-[#B8C2BC] leading-relaxed font-sans bg-[#1B2620]/20 p-3.5 rounded-xl border border-white/5 whitespace-pre-line">
-                        {renderSegments(activeEduCat.konteks)}
+                    <div className="p-2.5 sm:p-3 rounded-xl bg-[#1C2521] border border-white/5 flex items-center gap-3 shadow-lg hover:border-[#7FA396]/15 transition-all duration-300">
+                      <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[#7FA396]/10 flex items-center justify-center text-[#7FA396] text-base sm:text-lg shrink-0">
+                        📚
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-xs text-[#F0EEE8]">
+                          {language === "en" ? "Data-Based Education" : "Edukasi Berbasis Data"}
+                        </h4>
+                        <p className="text-[10px] sm:text-[10.5px] text-[#8A9590] leading-tight mt-0.5">
+                          {language === "en" ? "Recognize signs of abuse with verified facts" : "Kenali tanda kekerasan dengan data rujukan terverifikasi"}
+                        </p>
                       </div>
                     </div>
                   </div>
-                )}
+                </div>
+              )}
 
-                {/* CTA: Butuh Bantuan Segera? */}
-                <div className="w-full glass-panel-elevated bg-[#202C26]/90 rounded-2xl p-6 text-center border border-[#7FA396]/20 relative overflow-hidden shadow-2xl">
-                  <div className="absolute top-0 right-0 w-24 h-24 bg-[#7FA396]/5 rounded-full filter blur-xl pointer-events-none"></div>
-                  <h3 className="text-base font-display font-bold text-[#F0EEE8] tracking-tight mb-1.5">
-                    {language === "en" ? "Need Immediate Assistance?" : "Butuh Bantuan Segera?"}
-                  </h3>
-                  <p className="text-xs text-[#B8C2BC] max-w-md mx-auto leading-relaxed mb-5">
+              {/* SLIDE 4: YOU ARE NOT ALONE */}
+              {slideIndex === 4 && (
+                <div className="flex flex-col items-center justify-center w-full max-w-[440px] px-2">
+                  <span className="font-mono tracking-widest text-[#7FA396] text-[10px] sm:text-xs font-bold mb-1 sm:mb-2 uppercase">
+                    {language === "en" ? "YOU ARE NOT ALONE" : "ANDA TIDAK SENDIRI"}
+                  </span>
+                  <h2 className="font-display font-bold text-lg sm:text-2xl text-[#F0EEE8] mb-2 sm:mb-3">
+                    {language === "en" ? "Recognize. Resist. Recover." : "Kenali. Lawan. Pulih."}
+                  </h2>
+
+                  <SavePinLogo size="md" className="mb-2 sm:mb-3 animate-bounce-slow shrink-0" />
+
+                  <p className="text-[11px] sm:text-xs text-[#B8C2BC] leading-relaxed max-w-[380px] mb-3 sm:mb-5 text-center">
                     {language === "en"
-                      ? "SafeMap provides a secure map of shelters, free legal aid (LBH), and pro-bono clinics nearest to you — completely free and anonymous."
-                      : "SafeMap menyediakan peta shelter, LBH gratis, dan klinik pro-bono terdekat dari posisi kamu — gratis dan anonim."}
+                      ? "Explore verified education on abuse, take a private screening questionnaire, or head directly to the map."
+                      : "Pelajari tanda-tanda kekerasan, lakukan kuesioner skrining mandiri, atau langsung buka peta di bawah."}
                   </p>
 
-                  {/* Grid containing the two direct action buttons */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="grid grid-cols-2 gap-2.5 sm:gap-4 w-full">
                     <button
-                      type="button"
-                      onClick={() => {
-                        setViewingQuestionnaire(true);
-                        setViewingEducation(false);
-                      }}
-                      className="w-full py-3 bg-[#1C2521] hover:bg-[#25322B] text-[#7FA396] border border-[#7FA396]/20 rounded-xl text-xs font-bold transition-all active:scale-[0.98] flex items-center justify-center gap-1.5 cursor-pointer"
+                      onClick={() => setViewingEducation(true)}
+                      className="p-3 sm:p-4 rounded-xl bg-[#1C2521] border border-white/5 flex flex-col items-center justify-center text-center shadow-lg hover:border-[#7FA396]/30 transition-all duration-300 active:scale-[0.97] cursor-pointer"
                     >
-                      <span>📋</span>
-                      <span>{language === "en" ? "Check Your Abuse Level (Questionnaire)" : "Cek Tingkat Kekerasanmu (Kuesioner)"}</span>
+                      <span className="text-xl sm:text-2xl mb-1">📚</span>
+                      <span className="font-bold text-[#F0EEE8] text-xs">
+                        {language === "en" ? "Read Education" : "Mulai Belajar"}
+                      </span>
+                      <span className="text-[9.5px] sm:text-[10px] text-[#8A9590] mt-0.5 leading-tight">
+                        {language === "en" ? "Learn signs & data" : "Edukasi & data rujukan"}
+                      </span>
                     </button>
+
                     <button
-                      type="button"
-                      onClick={onComplete}
-                      className="w-full py-3 bg-[#7FA396] hover:bg-[#9DBDB0] text-[#1B2620] rounded-xl text-xs font-extrabold transition-all active:scale-[0.98] flex items-center justify-center gap-1.5 shadow-lg shadow-[#7FA396]/10 cursor-pointer"
+                      onClick={() => setViewingQuestionnaire(true)}
+                      className="p-3 sm:p-4 rounded-xl bg-[#1C2521] border border-white/5 flex flex-col items-center justify-center text-center shadow-lg hover:border-[#7FA396]/30 transition-all duration-300 active:scale-[0.97] cursor-pointer"
                     >
-                      <span>🗺️</span>
-                      <span>{language === "en" ? "Go to SafeMap Dashboard" : "Buka SafeMap Sekarang (Dashboard)"}</span>
+                      <span className="text-xl sm:text-2xl mb-1">📋</span>
+                      <span className="font-bold text-[#F0EEE8] text-xs">
+                        {language === "en" ? "Screening Quiz" : "Kuesioner Skrining"}
+                      </span>
+                      <span className="text-[9.5px] sm:text-[10px] text-[#8A9590] mt-0.5 leading-tight">
+                        {language === "en" ? "Assess your risk" : "Asesmen risiko pribadi"}
+                      </span>
                     </button>
                   </div>
                 </div>
-              </motion.div>
-            ) : (
-              <motion.div
-                key="questionnaire"
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                transition={{ duration: 0.4, ease: "easeInOut" }}
-                className="w-full glass-panel-elevated rounded-2xl p-6 flex flex-col items-center text-center relative max-h-full overflow-y-auto"
-              >
-                <div className="flex items-center gap-2 self-start mb-2">
-                  <button
-                    onClick={handlePrev}
-                    className="p-1.5 rounded-lg bg-[#1B2620]/80 hover:bg-[#2C3D34] text-[#B8C2BC] border border-white/5 active:scale-95 transition-all"
-                  >
-                    <ArrowLeft className="w-4 h-4" />
-                  </button>
-                  <span className="text-[10px] font-bold text-[#7FA396] uppercase tracking-wider font-mono">
-                    {language === "en" ? "Back to Education" : "Kembali ke Edukasi"}
-                  </span>
-                </div>
+              )}
+            </motion.div>
+          ) : viewingEducation ? (
+            <motion.div
+              key="education"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3, ease: "easeInOut" }}
+              className="w-full flex flex-col items-center relative py-2"
+            >
+              {/* Back Button */}
+              <div className="w-full flex items-center gap-2 mb-3 self-start">
+                <button
+                  onClick={handlePrev}
+                  className="p-1.5 rounded-lg bg-[#1B2620]/80 hover:bg-[#2C3D34] text-[#B8C2BC] border border-white/5 active:scale-95 transition-all cursor-pointer"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                </button>
+                <span className="text-[10px] font-bold text-[#7FA396] uppercase tracking-wider font-mono">
+                  {language === "en" ? "Back to Slides" : "Kembali ke Slides"}
+                </span>
+              </div>
 
-                <h2 className="text-lg font-display font-extrabold text-[#F0EEE8] tracking-tight leading-snug mb-2">
-                  {strings.onboarding.questionnaireTitle}
-                </h2>
-                
-                <p className="text-xs text-[#B8C2BC] leading-relaxed font-sans max-w-[340px] mb-5">
-                  {strings.onboarding.questionnaireSubtitle}
+              {/* Header details */}
+              <span className="text-[10px] tracking-[0.2em] font-extrabold text-[#7FA396] uppercase mb-1">
+                {language === "en" ? "ABUSE EDUCATION" : "EDUKASI KEKERASAN"}
+              </span>
+              <h2 className="text-xl sm:text-3xl font-display font-extrabold text-[#F0EEE8] tracking-tight text-center leading-snug">
+                {language === "en" ? "Know Before It's Too Late" : "Kenali Sebelum Terlambat"}
+              </h2>
+              <p className="text-xs text-[#8A9590] text-center max-w-lg mt-1 mb-4">
+                {language === "en" 
+                  ? "Clickable facts — tap colored, dotted text to view live reference data." 
+                  : "Fakta yang bisa diklik — tap teks yang berwarna untuk melihat data rujukan."}
+              </p>
+
+              {/* Horizontal Tab Selector */}
+              <div className="flex flex-wrap items-center justify-center gap-2 mb-4">
+                {eduCategories.map((cat) => {
+                  const isActive = selectedEduCategory === cat.id;
+                  return (
+                    <button
+                      key={cat.id}
+                      onClick={() => setSelectedEduCategory(cat.id)}
+                      className={`py-1.5 px-3 rounded-full text-xs font-bold border flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer ${
+                        isActive
+                          ? "bg-[#7FA396]/15 text-[#7FA396] border-[#7FA396]/40 shadow-sm"
+                          : "bg-[#1B2620]/40 text-[#8A9590] border-white/5 hover:text-[#F0EEE8]"
+                      }`}
+                    >
+                      <span>{cat.icon}</span>
+                      <span>{cat.name}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Active Category Card Content */}
+              {activeEduCat && (
+                <div className="w-full glass-panel-elevated rounded-2xl p-4 sm:p-6 text-left border border-white/5 mb-4 shadow-xl">
+                  {/* Card Header Category name and brief desc */}
+                  <div className="flex items-start gap-3.5 pb-3 border-b border-white/5 mb-4">
+                    <span className="text-2xl p-2.5 bg-[#1B2620]/80 rounded-xl border border-white/5 shadow-inner shrink-0">
+                      {activeEduCat.icon}
+                    </span>
+                    <div>
+                      <h3 className="text-base sm:text-lg font-display font-bold text-[#F0EEE8] tracking-tight">
+                        {activeEduCat.title}
+                      </h3>
+                      <p className="text-xs text-[#8A9590] mt-0.5 leading-relaxed">
+                        {activeEduCat.desc}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Section 1: GAMBARAN UMUM */}
+                  <div className="mb-4">
+                    <h4 className="text-[10px] font-bold text-[#7FA396] uppercase tracking-wider mb-1.5 font-mono">
+                      {language === "en" ? "GENERAL OVERVIEW" : "GAMBARAN UMUM"}
+                    </h4>
+                    <div className="text-xs text-[#B8C2BC] leading-relaxed font-sans bg-[#1B2620]/20 p-3 rounded-xl border border-white/5 whitespace-pre-line">
+                      {renderSegments(activeEduCat.gambaranUmum)}
+                    </div>
+                  </div>
+
+                  {/* Section 2: TANDA-TANDA */}
+                  <div className="mb-4">
+                    <h4 className="text-[10px] font-bold text-[#7FA396] uppercase tracking-wider mb-1.5 font-mono">
+                      {language === "en" ? "SIGNS TO RECOGNIZE" : "TANDA-TANDA YANG PERLU DIKENALI"}
+                    </h4>
+                    <ul className="space-y-1.5">
+                      {activeEduCat.tandaTanda.map((tanda, i) => (
+                        <li key={i} className="text-xs text-[#B8C2BC] flex items-start gap-2 leading-relaxed">
+                          <span className="text-[#E0703D] mt-0.5 text-[10px]">●</span>
+                          <span>{tanda}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  {/* Section 3: KONTEKS DI INDONESIA */}
+                  <div>
+                    <h4 className="text-[10px] font-bold text-[#7FA396] uppercase tracking-wider mb-1.5 font-mono">
+                      {language === "en" ? "CONTEXT IN INDONESIA" : "KONTEKS DI INDONESIA"}
+                    </h4>
+                    <div className="text-xs text-[#B8C2BC] leading-relaxed font-sans bg-[#1B2620]/20 p-3 rounded-xl border border-white/5 whitespace-pre-line">
+                      {renderSegments(activeEduCat.konteks)}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* CTA: Butuh Bantuan Segera? */}
+              <div className="w-full glass-panel-elevated bg-[#202C26]/90 rounded-2xl p-4 sm:p-6 text-center border border-[#7FA396]/20 relative overflow-hidden shadow-xl mb-4">
+                <h3 className="text-sm sm:text-base font-display font-bold text-[#F0EEE8] tracking-tight mb-1">
+                  {language === "en" ? "Need Immediate Assistance?" : "Butuh Bantuan Segera?"}
+                </h3>
+                <p className="text-xs text-[#B8C2BC] max-w-md mx-auto leading-relaxed mb-4">
+                  {language === "en"
+                    ? "SafeMap provides a secure map of shelters, free legal aid (LBH), and pro-bono clinics nearest to you."
+                    : "SafeMap menyediakan peta shelter, LBH gratis, dan klinik pro-bono terdekat dari posisi kamu."}
                 </p>
 
-                {/* Questionnaire Options Grid */}
-                <div className="w-full flex flex-col gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                   <button
-                    onClick={() => onSelectCategory("physical")}
-                    className="w-full p-4 rounded-xl bg-[#202C26] hover:bg-[#2C3D34] text-left border border-white/5 hover:border-[#7FA396]/30 transition-all active:scale-[0.98] flex items-center justify-between"
+                    type="button"
+                    onClick={() => {
+                      setViewingQuestionnaire(true);
+                      setViewingEducation(false);
+                    }}
+                    className="w-full py-2.5 bg-[#1C2521] hover:bg-[#25322B] text-[#7FA396] border border-[#7FA396]/20 rounded-xl text-xs font-bold transition-all active:scale-[0.98] flex items-center justify-center gap-1.5 cursor-pointer"
                   >
-                    <div className="flex items-center gap-3">
-                      <span className="text-2xl p-1.5 bg-[#1B2620] rounded-lg">👊</span>
-                      <div>
-                        <h4 className="text-xs font-bold text-[#F0EEE8]">
-                          {language === "en" ? "Physical Violence" : "Kekerasan Fisik"}
-                        </h4>
-                        <p className="text-[10px] text-[#8A9590] mt-0.5">
-                          {language === "en" ? "Assault, hitting, physical threats" : "Pemukulan, tamparan, ancaman fisik langsung"}
-                        </p>
-                      </div>
-                    </div>
-                    <ChevronRight className="w-4 h-4 text-[#7FA396]" />
+                    <span>📋</span>
+                    <span>{language === "en" ? "Check Abuse Level (Quiz)" : "Cek Tingkat Kekerasan (Kuesioner)"}</span>
                   </button>
-
                   <button
-                    onClick={() => onSelectCategory("verbal")}
-                    className="w-full p-4 rounded-xl bg-[#202C26] hover:bg-[#2C3D34] text-left border border-white/5 hover:border-[#7FA396]/30 transition-all active:scale-[0.98] flex items-center justify-between"
+                    type="button"
+                    onClick={onComplete}
+                    className="w-full py-2.5 bg-[#7FA396] hover:bg-[#9DBDB0] text-[#1B2620] rounded-xl text-xs font-extrabold transition-all active:scale-[0.98] flex items-center justify-center gap-1.5 shadow-md shadow-[#7FA396]/10 cursor-pointer"
                   >
-                    <div className="flex items-center gap-3">
-                      <span className="text-2xl p-1.5 bg-[#1B2620] rounded-lg">🗣️</span>
-                      <div>
-                        <h4 className="text-xs font-bold text-[#F0EEE8]">
-                          {language === "en" ? "Verbal Abuse" : "Kekerasan Verbal"}
-                        </h4>
-                        <p className="text-[10px] text-[#8A9590] mt-0.5">
-                          {language === "en" ? "Repeated insults, gaslighting, threats" : "Hinaan berulang, pelecehan kata, intimidasi"}
-                        </p>
-                      </div>
-                    </div>
-                    <ChevronRight className="w-4 h-4 text-[#7FA396]" />
-                  </button>
-
-                  <button
-                    onClick={() => onSelectCategory("kdrt")}
-                    className="w-full p-4 rounded-xl bg-[#202C26] hover:bg-[#2C3D34] text-left border border-white/5 hover:border-[#7FA396]/30 transition-all active:scale-[0.98] flex items-center justify-between"
-                  >
-                    <div className="flex items-center gap-3">
-                      <span className="text-2xl p-1.5 bg-[#1B2620] rounded-lg">🏠</span>
-                      <div>
-                        <h4 className="text-xs font-bold text-[#F0EEE8]">
-                          {language === "en" ? "Domestic Violence (KDRT)" : "Kekerasan Dalam Rumah Tangga (KDRT)"}
-                        </h4>
-                        <p className="text-[10px] text-[#8A9590] mt-0.5">
-                          {language === "en" ? "Abuse within family/household" : "Kekerasan fisik/psikis di lingkup keluarga"}
-                        </p>
-                      </div>
-                    </div>
-                    <ChevronRight className="w-4 h-4 text-[#7FA396]" />
-                  </button>
-
-                  <button
-                    onClick={() => onSelectCategory("cyber")}
-                    className="w-full p-4 rounded-xl bg-[#202C26] hover:bg-[#2C3D34] text-left border border-white/5 hover:border-[#7FA396]/30 transition-all active:scale-[0.98] flex items-center justify-between"
-                  >
-                    <div className="flex items-center gap-3">
-                      <span className="text-2xl p-1.5 bg-[#1B2620] rounded-lg">💻</span>
-                      <div>
-                        <h4 className="text-xs font-bold text-[#F0EEE8]">
-                          {language === "en" ? "Cyberbullying / Cyber Violence" : "Cyberbullying / Kekerasan Siber"}
-                        </h4>
-                        <p className="text-[10px] text-[#8A9590] mt-0.5">
-                          {language === "en" ? "Online harassment, doxxing, digital threats" : "Pelecehan online, teror siber, doxxing"}
-                        </p>
-                      </div>
-                    </div>
-                    <ChevronRight className="w-4 h-4 text-[#7FA396]" />
+                    <span>🗺️</span>
+                    <span>{language === "en" ? "Open SafeMap" : "Buka SafeMap Sekarang"}</span>
                   </button>
                 </div>
+              </div>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="questionnaire"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.3, ease: "easeInOut" }}
+              className="w-full glass-panel-elevated rounded-2xl p-4 sm:p-6 flex flex-col items-center text-center relative py-2"
+            >
+              <div className="flex items-center gap-2 self-start mb-2">
+                <button
+                  onClick={handlePrev}
+                  className="p-1.5 rounded-lg bg-[#1B2620]/80 hover:bg-[#2C3D34] text-[#B8C2BC] border border-white/5 active:scale-95 transition-all cursor-pointer"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                </button>
+                <span className="text-[10px] font-bold text-[#7FA396] uppercase tracking-wider font-mono">
+                  {language === "en" ? "Back" : "Kembali"}
+                </span>
+              </div>
 
-                {/* Skip Questionnaire Action */}
+              <h2 className="text-base sm:text-lg font-display font-extrabold text-[#F0EEE8] tracking-tight leading-snug mb-1">
+                {strings.onboarding.questionnaireTitle}
+              </h2>
+              
+              <p className="text-xs text-[#B8C2BC] leading-relaxed font-sans max-w-[340px] mb-4">
+                {strings.onboarding.questionnaireSubtitle}
+              </p>
+
+              {/* Questionnaire Options Grid */}
+              <div className="w-full flex flex-col gap-2.5 mb-3">
+                <button
+                  onClick={() => onSelectCategory("physical")}
+                  className="w-full p-3 sm:p-4 rounded-xl bg-[#202C26] hover:bg-[#2C3D34] text-left border border-white/5 hover:border-[#7FA396]/30 transition-all active:scale-[0.98] flex items-center justify-between cursor-pointer"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-xl sm:text-2xl p-1.5 bg-[#1B2620] rounded-lg">👊</span>
+                    <div>
+                      <h4 className="text-xs font-bold text-[#F0EEE8]">
+                        {language === "en" ? "Physical Violence" : "Kekerasan Fisik"}
+                      </h4>
+                      <p className="text-[10px] text-[#8A9590] mt-0.5">
+                        {language === "en" ? "Assault, hitting, physical threats" : "Pemukulan, tamparan, ancaman fisik"}
+                      </p>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-[#7FA396]" />
+                </button>
+
+                <button
+                  onClick={() => onSelectCategory("verbal")}
+                  className="w-full p-3 sm:p-4 rounded-xl bg-[#202C26] hover:bg-[#2C3D34] text-left border border-white/5 hover:border-[#7FA396]/30 transition-all active:scale-[0.98] flex items-center justify-between cursor-pointer"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-xl sm:text-2xl p-1.5 bg-[#1B2620] rounded-lg">🗣️</span>
+                    <div>
+                      <h4 className="text-xs font-bold text-[#F0EEE8]">
+                        {language === "en" ? "Verbal Abuse" : "Kekerasan Verbal"}
+                      </h4>
+                      <p className="text-[10px] text-[#8A9590] mt-0.5">
+                        {language === "en" ? "Repeated insults, gaslighting, threats" : "Hinaan berulang, pelecehan kata"}
+                      </p>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-[#7FA396]" />
+                </button>
+
+                <button
+                  onClick={() => onSelectCategory("kdrt")}
+                  className="w-full p-3 sm:p-4 rounded-xl bg-[#202C26] hover:bg-[#2C3D34] text-left border border-white/5 hover:border-[#7FA396]/30 transition-all active:scale-[0.98] flex items-center justify-between cursor-pointer"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-xl sm:text-2xl p-1.5 bg-[#1B2620] rounded-lg">🏠</span>
+                    <div>
+                      <h4 className="text-xs font-bold text-[#F0EEE8]">
+                        {language === "en" ? "Domestic Violence (KDRT)" : "Kekerasan Rumah Tangga (KDRT)"}
+                      </h4>
+                      <p className="text-[10px] text-[#8A9590] mt-0.5">
+                        {language === "en" ? "Abuse within family/household" : "Kekerasan fisik/psikis keluarga"}
+                      </p>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-[#7FA396]" />
+                </button>
+
+                <button
+                  onClick={() => onSelectCategory("cyber")}
+                  className="w-full p-3 sm:p-4 rounded-xl bg-[#202C26] hover:bg-[#2C3D34] text-left border border-white/5 hover:border-[#7FA396]/30 transition-all active:scale-[0.98] flex items-center justify-between cursor-pointer"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-xl sm:text-2xl p-1.5 bg-[#1B2620] rounded-lg">💻</span>
+                    <div>
+                      <h4 className="text-xs font-bold text-[#F0EEE8]">
+                        {language === "en" ? "Cyberbullying / Cyber Violence" : "Cyberbullying / Kekerasan Siber"}
+                      </h4>
+                      <p className="text-[10px] text-[#8A9590] mt-0.5">
+                        {language === "en" ? "Online harassment, doxxing, digital threats" : "Pelecehan online, teror siber"}
+                      </p>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-[#7FA396]" />
+                </button>
+              </div>
+
+              {/* Skip Questionnaire Action */}
+              <button
+                onClick={onComplete}
+                className="w-full py-2.5 bg-[#1C2521] hover:bg-[#25322B] text-[#7FA396] border border-[#7FA396]/20 rounded-xl text-xs font-bold transition-all active:scale-95 text-center block cursor-pointer"
+              >
+                {strings.onboarding.skipQuestionnaire}
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </main>
+
+      {/* FIXED BOTTOM ACTION BAR (Always visible above mobile navigation bar) */}
+      {!viewingQuestionnaire && !viewingEducation && (
+        <footer className="shrink-0 w-full max-w-xl mx-auto px-4 py-2.5 sm:py-4 z-30 bg-[#1B2620]/95 backdrop-blur-md border-t border-white/5">
+          <div className="grid grid-cols-3 items-center w-full">
+            {/* Left Action (Skip or Back) */}
+            <div className="justify-self-start">
+              {slideIndex > 0 ? (
+                <button
+                  onClick={handlePrev}
+                  className="py-2 px-2.5 text-xs sm:text-sm text-[#8A9590] hover:text-[#F0EEE8] font-semibold transition-colors active:scale-95 flex items-center gap-1 cursor-pointer"
+                >
+                  <span>←</span>
+                  <span>{language === "en" ? "Back" : "Kembali"}</span>
+                </button>
+              ) : (
+                <button
+                  onClick={handleSkipIntro}
+                  className="py-2 px-2.5 text-xs sm:text-sm text-[#8A9590] hover:text-[#F0EEE8] font-semibold transition-colors active:scale-95 cursor-pointer"
+                >
+                  {strings.onboarding.skip}
+                </button>
+              )}
+            </div>
+
+            {/* Center Slider Progress Dots */}
+            <div className="justify-self-center flex gap-1.5 sm:gap-2">
+              {slidesArray.map((_, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setSlideIndex(idx)}
+                  className={`h-2 sm:h-2.5 rounded-full transition-all duration-300 cursor-pointer ${
+                    slideIndex === idx ? "w-5 sm:w-6 bg-[#7FA396]" : "w-2 sm:w-2.5 bg-[#2C3D34]"
+                  }`}
+                  aria-label={`Go to slide ${idx + 1}`}
+                />
+              ))}
+            </div>
+
+            {/* Right Action (Next or Open Map) */}
+            <div className="justify-self-end">
+              {slideIndex === totalSlides - 1 ? (
                 <button
                   onClick={onComplete}
-                  className="mt-6 w-full py-3 bg-[#1C2521] hover:bg-[#25322B] text-[#7FA396] border border-[#7FA396]/20 rounded-xl text-xs font-bold transition-all active:scale-95 text-center block cursor-pointer"
+                  className="px-3.5 sm:px-5 py-2 sm:py-2.5 bg-[#E0703D] hover:bg-[#F0804D] text-white font-bold rounded-full text-xs sm:text-sm shadow-md shadow-[#E0703D]/20 flex items-center gap-1 transition-all active:scale-95 cursor-pointer"
                 >
-                  {strings.onboarding.skipQuestionnaire}
+                  <span>{language === "en" ? "Open Map ✓" : "Buka Peta ✓"}</span>
                 </button>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-
-        {/* Footer Area with Dots & Action Buttons */}
-        {!viewingQuestionnaire && !viewingEducation && (
-          <div className="pb-3 sm:pb-8 shrink-0 w-full">
-            {/* Action Footer Grid */}
-            <div className="grid grid-cols-3 items-center w-full">
-              {/* Left Action (Skip or Back) */}
-              <div className="justify-self-start">
-                {slideIndex === 4 ? (
-                  <button
-                    onClick={handlePrev}
-                    className="py-2.5 sm:py-3 text-xs sm:text-sm text-[#8A9590] hover:text-[#F0EEE8] font-semibold transition-colors active:scale-95 flex items-center gap-1 cursor-pointer"
-                  >
-                    <span>←</span>
-                    <span>{language === "en" ? "Back" : "Kembali"}</span>
-                  </button>
-                ) : (
-                  <button
-                    onClick={handleSkipIntro}
-                    className="py-2.5 sm:py-3 text-xs sm:text-sm text-[#8A9590] hover:text-[#F0EEE8] font-semibold transition-colors active:scale-95 cursor-pointer"
-                  >
-                    {strings.onboarding.skip}
-                  </button>
-                )}
-              </div>
-
-              {/* Center Slider Progress Dots */}
-              <div className="justify-self-center flex gap-1.5 sm:gap-2">
-                {slidesArray.map((_, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => setSlideIndex(idx)}
-                    className={`h-2 sm:h-2.5 rounded-full transition-all duration-300 cursor-pointer ${
-                      slideIndex === idx ? "w-5 sm:w-6 bg-[#7FA396]" : "w-2 sm:w-2.5 bg-[#2C3D34]"
-                    }`}
-                  />
-                ))}
-              </div>
-
-              {/* Right Action (Next or Open Map) */}
-              <div className="justify-self-end">
-                {slideIndex === 4 ? (
-                  <button
-                    onClick={onComplete}
-                    className="px-4 sm:px-6 py-2.5 sm:py-3 bg-[#E0703D] hover:bg-[#F0804D] text-white font-bold rounded-full text-xs sm:text-sm shadow-lg shadow-[#E0703D]/10 flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
-                  >
-                    <span>{language === "en" ? "Open Map ✓" : "Buka Peta ✓"}</span>
-                  </button>
-                ) : (
-                  <button
-                    onClick={handleNext}
-                    className="px-4 sm:px-6 py-2.5 sm:py-3 bg-[#7FA396] hover:bg-[#9DBDB0] text-[#1B2620] font-bold rounded-full text-xs sm:text-sm shadow-lg shadow-[#7FA396]/10 flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
-                  >
-                    <span>{strings.onboarding.next}</span>
-                    <span>→</span>
-                  </button>
-                )}
-              </div>
+              ) : (
+                <button
+                  onClick={handleNext}
+                  className="px-4 sm:px-6 py-2 sm:py-2.5 bg-[#7FA396] hover:bg-[#9DBDB0] text-[#1B2620] font-bold rounded-full text-xs sm:text-sm shadow-md shadow-[#7FA396]/20 flex items-center gap-1 transition-all active:scale-95 cursor-pointer"
+                >
+                  <span>{strings.onboarding.next}</span>
+                  <span>→</span>
+                </button>
+              )}
             </div>
           </div>
-        )}
-
-      </div>
+        </footer>
+      )}
 
       {/* FACT MODAL POPUP REFERENCE */}
       <AnimatePresence>
@@ -1174,7 +1220,7 @@ export default function Onboarding({
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
               transition={{ duration: 0.25, ease: "easeOut" }}
-              className="bg-[#202C26] border border-[#7FA396]/20 rounded-2xl p-6 max-w-md w-full shadow-2xl relative"
+              className="bg-[#202C26] border border-[#7FA396]/20 rounded-2xl p-5 sm:p-6 max-w-md w-full shadow-2xl relative"
             >
               <button
                 onClick={() => setActiveFact(null)}
@@ -1192,17 +1238,17 @@ export default function Onboarding({
                 {activeFact.title}
               </h3>
               
-              <p className="text-[10px] text-[#C9A66B] font-medium font-sans mb-4">
+              <p className="text-[10px] text-[#C9A66B] font-medium font-sans mb-3">
                 {language === "en" ? "Source" : "Sumber"}: {activeFact.source}
               </p>
               
-              <p className="text-xs text-[#B8C2BC] leading-relaxed font-sans bg-[#1B2620]/60 p-4 rounded-xl border border-white/5">
+              <p className="text-xs text-[#B8C2BC] leading-relaxed font-sans bg-[#1B2620]/60 p-3.5 rounded-xl border border-white/5">
                 {activeFact.description}
               </p>
               
               <button
                 onClick={() => setActiveFact(null)}
-                className="mt-5 w-full py-2.5 bg-[#7FA396] hover:bg-[#9DBDB0] text-[#1B2620] font-bold rounded-xl text-xs transition-all active:scale-95 cursor-pointer"
+                className="mt-4 w-full py-2.5 bg-[#7FA396] hover:bg-[#9DBDB0] text-[#1B2620] font-bold rounded-xl text-xs transition-all active:scale-95 cursor-pointer"
               >
                 {language === "en" ? "I Understand" : "Mengerti"}
               </button>
@@ -1210,7 +1256,6 @@ export default function Onboarding({
           </div>
         )}
       </AnimatePresence>
-
     </div>
   );
 }
