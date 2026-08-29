@@ -23,16 +23,46 @@ import {
 const app = express();
 const PORT = 3000;
 
-app.use(express.json());
+// Enhanced JSON parsing with larger limits for Safari
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
-// Enable CORS for web deployment and cross-origin access
+// Set JSON formatting for better Safari compatibility
+app.set('json spaces', 2);
+
+// Enhanced CORS middleware with Safari compatibility
 app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", "*");
+  const origin = req.headers.origin || "*";
+  res.header("Access-Control-Allow-Origin", origin);
   res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Admin-Token");
+  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Admin-Token, Accept, Accept-Language");
+  res.header("Access-Control-Allow-Credentials", "true");
+  res.header("Access-Control-Max-Age", "86400");
+  res.header("Vary", "Origin");
+  
   if (req.method === "OPTIONS") {
     return res.sendStatus(200);
   }
+  next();
+});
+
+// Cache control headers for API endpoints
+app.use((req, res, next) => {
+  if (req.path.startsWith('/api/')) {
+    res.header("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0");
+    res.header("Pragma", "no-cache");
+    res.header("Expires", "0");
+    res.header("Surrogate-Control", "no-store");
+  }
+  next();
+});
+
+// Security headers for Safari
+app.use((req, res, next) => {
+  res.header("X-Content-Type-Options", "nosniff");
+  res.header("X-Frame-Options", "SAMEORIGIN");
+  res.header("X-XSS-Protection", "1; mode=block");
+  res.header("Referrer-Policy", "strict-origin-when-cross-origin");
   next();
 });
 
@@ -44,7 +74,7 @@ function requireAdmin(req: express.Request, res: express.Response, next: express
   if (authHeader === `Bearer ${ADMIN_TOKEN}` || req.headers["x-admin-token"] === ADMIN_TOKEN) {
     next();
   } else {
-    res.status(401).json({ error: "Unauthorized access. Please log in." });
+    res.status(401).type("application/json").json({ error: "Unauthorized access. Please log in." });
   }
 }
 
@@ -65,7 +95,7 @@ function getGeminiClient(): GoogleGenAI {
       apiKey: key,
       httpOptions: {
         headers: {
-          "User-Agent": "aistudio-build",
+          "User-Agent": `SafeMap/2.0 (Node.js)`,
         },
       },
     });
@@ -81,10 +111,10 @@ function getGeminiClient(): GoogleGenAI {
 app.get("/api/resources", async (req, res) => {
   try {
     const resources = await getResourcesFromFirestore();
-    res.json(resources);
+    res.type("application/json").json(resources);
   } catch (err) {
     console.error("GET /api/resources error:", err);
-    res.status(500).json({ error: "Failed to fetch resources" });
+    res.status(500).type("application/json").json({ error: "Failed to fetch resources" });
   }
 });
 
@@ -93,7 +123,7 @@ app.post("/api/resources", async (req, res) => {
   const { name, category, address, phone, hours, free, lat, lng, notes } = req.body;
   
   if (!name || !category || !address || !phone || lat === undefined || lng === undefined) {
-    return res.status(400).json({ error: "Missing required fields" });
+    return res.status(400).type("application/json").json({ error: "Missing required fields" });
   }
 
   const newSubmission = {
@@ -113,10 +143,10 @@ app.post("/api/resources", async (req, res) => {
 
   try {
     await addPendingSubmissionToFirestore(newSubmission);
-    res.status(201).json({ success: true, submission: newSubmission });
+    res.status(201).type("application/json").json({ success: true, submission: newSubmission });
   } catch (err) {
     console.error("POST /api/resources error:", err);
-    res.status(500).json({ error: "Failed to submit proposal" });
+    res.status(500).type("application/json").json({ error: "Failed to submit proposal" });
   }
 });
 
@@ -138,10 +168,10 @@ app.get("/api/chats/:sessionId", async (req, res) => {
       await saveChatToFirestore(session);
     }
     
-    res.json(session);
+    res.type("application/json").json(session);
   } catch (err) {
     console.error("GET /api/chats/:sessionId error:", err);
-    res.status(500).json({ error: "Failed to load chat session" });
+    res.status(500).type("application/json").json({ error: "Failed to load chat session" });
   }
 });
 
@@ -165,13 +195,13 @@ app.post("/api/chats/:sessionId/human", async (req, res) => {
       });
 
       await saveChatToFirestore(session);
-      res.json({ success: true, chat: session });
+      res.type("application/json").json({ success: true, chat: session });
     } else {
-      res.status(404).json({ error: "Session not found" });
+      res.status(404).type("application/json").json({ error: "Session not found" });
     }
   } catch (err) {
     console.error("POST /api/chats/:sessionId/human error:", err);
-    res.status(500).json({ error: "Failed to request human counselor" });
+    res.status(500).type("application/json").json({ error: "Failed to request human counselor" });
   }
 });
 
@@ -180,7 +210,7 @@ app.post("/api/chat", async (req, res) => {
   const { sessionId, message, language } = req.body;
 
   if (!sessionId || !message) {
-    return res.status(400).json({ error: "SessionId and message are required" });
+    return res.status(400).type("application/json").json({ error: "SessionId and message are required" });
   }
 
   const currentLang = language === "en" ? "en" : "id";
@@ -226,16 +256,18 @@ app.post("/api/chat", async (req, res) => {
     if (containsCrisis) {
       if (currentLang === "id") {
         aiReply = "🚨 PERINGATAN DARURAT KRITIS: Keselamatan Anda adalah prioritas utama. Sistem mendeteksi tanda bahaya atau ancaman segera. Harap segera hubungi layanan darurat berikut:\n\n" +
+                  "• Telepon Darurat: 112\n" +
                   "• Polisi: 110 (Respons Darurat Fisik)\n" +
                   "• SAPA KemenPPPA: 129 (Evakuasi & Rumah Aman)\n" +
                   "• Krisis Kesehatan & Medis: 119\n\n" +
-                  "Harap segera tinggalkan lokasi jika tidak aman dan cari perlindungan di kantor kepolisian terdekat atau rumah ibadah terdekat. Kami di sini mendukung Anda, tetapi mohon hubungi pihak berwenang.";
+                  "Harap segera tinggalkan lokasi jika tidak aman dan cari perlindungan di kantor kepolisian terdekat atau rumah ibadah terdekat. Kami di sini mendukung Anda, tetapi mohon hubungi layanan profesional segera.";
       } else {
         aiReply = "🚨 CRITICAL EMERGENCY NOTICE: Your immediate safety is our absolute priority. System detected distress or immediate danger signals. Please contact emergency services right away:\n\n" +
+                  "• Emergency Hotline: 112\n" +
                   "• Police: 110 (Physical Security Dispatch)\n" +
                   "• SAPA Ministry PPPA: 129 (Emergency Evacuation & Shelters)\n" +
                   "• Health Crisis & Ambulance: 119\n\n" +
-                  "Please leave the location immediately if it is unsafe and seek shelter at the nearest police station or public building. We support you, but please contact professional responders.";
+                  "Please leave the location immediately if it is unsafe and seek shelter at the nearest police station or public building. We support you, but please contact professional emergency responders now.";
       }
     } else {
       try {
@@ -246,14 +278,14 @@ app.post("/api/chat", async (req, res) => {
           .map((m: any) => `${m.role === "user" ? "User" : "SafePin"}: ${m.text}`)
           .join("\n");
 
-        const systemPrompt = `You are "SafePin", an empathetic, supportive, and practical AI companion and screening assistant for SafeMap. SafeMap is an anonymous support app for people affected by violence (physical, verbal, domestic/KDRT, and cyberbullying) in the Greater Jakarta (Jabodetabek) area.
+        const systemPrompt = `You are "SafePin", an empathetic, supportive, and practical AI companion and screening assistant for SafeMap. SafeMap is an anonymous support app for people affected by violence in Greater Jakarta (Jabodetabek).
 
 CRITICAL RESPONSIBILITIES & CONSTRAINTS:
 1. Speak in ${currentLang === "en" ? "English" : "Bahasa Indonesia"}.
 2. Be warm, calm, highly supportive, and objective. Never sound cold or overly technical.
-3. IMPORTANT: You are NOT a licensed counselor, doctor, lawyer, or clinical expert. You must NEVER provide medical diagnoses, legal verdicts, or promise specific case outcomes. Always remind the user gently if they ask for professional verdicts.
-4. Encourage using the app's features: the "Asesmen Mandiri" (Self-assessment) to understand risk severity, the interactive map to find free shelters/legal aid in Jabodetabek, and the "Darurat" contact panel.
-5. CRISIS PROTOCOL: If the user indicates any self-harm, suicidal ideation, or immediate threat of severe physical harm (even if not caught by keyword filters), immediately halt normal conversation and guide them explicitly to call the National Emergency services: Polisi 110 or SAPA 129. Do not give open-ended advice.
+3. IMPORTANT: You are NOT a licensed counselor, doctor, lawyer, or clinical expert. You must NEVER provide medical diagnoses, legal verdicts, or promise specific case outcomes. Always remind the user to consult professionals.
+4. Encourage using the app's features: the "Asesmen Mandiri" (Self-assessment) to understand risk severity, the interactive map to find free shelters/legal aid in Jabodetabek, and the "Darurat" (Emergency) button.
+5. CRISIS PROTOCOL: If the user indicates any self-harm, suicidal ideation, or immediate threat of severe physical harm (even if not caught by keyword filters), immediately halt normal conversation and provide emergency hotline numbers.
 6. Jabodetabek Scoped: Focus on Greater Jakarta services (P2TP2A, LBH APIK, Yayasan Pulih, RSCM).
 
 Conversation History:
@@ -274,9 +306,9 @@ SafePin response:`;
       } catch (err: any) {
         console.error("Gemini API Error:", err);
         if (currentLang === "id") {
-          aiReply = "Halo, SafePin sedang mengalami gangguan koneksi. Jika situasi Anda membutuhkan perhatian mendesak, silakan gunakan tombol Kontak Darurat di bagian bawah layar untuk segera menghubungi pihak berwenang. Anda tidak sendiri.";
+          aiReply = "Halo, SafePin sedang mengalami gangguan koneksi. Jika situasi Anda membutuhkan perhatian mendesak, silakan gunakan tombol Kontak Darurat di bagian bawah layar untuk segera menghubungi layanan bantuan profesional. Kami siap membantu Anda kapan saja.";
         } else {
-          aiReply = "Hello, SafePin is currently experiencing connection delays. If your situation is urgent, please use the Emergency Hotlines button at the bottom of the screen to connect with professional help. You are not alone.";
+          aiReply = "Hello, SafePin is currently experiencing connection delays. If your situation is urgent, please use the Emergency Hotlines button at the bottom of the screen to connect with professional support services. We're here to help you anytime.";
         }
       }
     }
@@ -293,10 +325,10 @@ SafePin response:`;
 
     await saveChatToFirestore(session);
 
-    res.json({ success: true, chat: session, reply: aiMsg });
+    res.type("application/json").json({ success: true, chat: session, reply: aiMsg });
   } catch (err) {
     console.error("POST /api/chat error:", err);
-    res.status(500).json({ error: "Failed to process chat message" });
+    res.status(500).type("application/json").json({ error: "Failed to process chat message" });
   }
 });
 
@@ -320,9 +352,9 @@ app.post("/api/admin/login", async (req, res) => {
     const matchDefault = cleanUser.toLowerCase() === "adminsafemap" && cleanPass === "RADEN4EVER";
 
     if (matchFirestore || matchEnv || matchDefault) {
-      res.json({ success: true, token: creds.token || ADMIN_TOKEN });
+      res.type("application/json").json({ success: true, token: creds.token || ADMIN_TOKEN });
     } else {
-      res.status(401).json({ error: "Username atau password salah!" });
+      res.status(401).type("application/json").json({ error: "Username atau password salah!" });
     }
   } catch (err) {
     console.error("POST /api/admin/login error:", err);
@@ -331,9 +363,9 @@ app.post("/api/admin/login", async (req, res) => {
     const envPass = (process.env.ADMIN_PASSWORD || "RADEN4EVER").trim();
     if ((cleanUser.toLowerCase() === envUser.toLowerCase() && cleanPass === envPass) ||
         (cleanUser.toLowerCase() === "adminsafemap" && cleanPass === "RADEN4EVER")) {
-      return res.json({ success: true, token: ADMIN_TOKEN });
+      return res.type("application/json").json({ success: true, token: ADMIN_TOKEN });
     }
-    res.status(401).json({ error: "Username atau password salah!" });
+    res.status(401).type("application/json").json({ error: "Username atau password salah!" });
   }
 });
 
@@ -341,10 +373,10 @@ app.post("/api/admin/login", async (req, res) => {
 app.get("/api/admin/pending", requireAdmin, async (req, res) => {
   try {
     const list = await getPendingSubmissionsFromFirestore();
-    res.json(list);
+    res.type("application/json").json(list);
   } catch (err) {
     console.error("GET /api/admin/pending error:", err);
-    res.status(500).json({ error: "Failed to fetch pending submissions" });
+    res.status(500).type("application/json").json({ error: "Failed to fetch pending submissions" });
   }
 });
 
@@ -355,7 +387,7 @@ app.post("/api/admin/approve/:id", requireAdmin, async (req, res) => {
     const pendingList = await getPendingSubmissionsFromFirestore();
     const approved = pendingList.find((p: any) => p.id === id);
     if (!approved) {
-      return res.status(404).json({ error: "Proposal not found" });
+      return res.status(404).type("application/json").json({ error: "Proposal not found" });
     }
 
     await deletePendingSubmissionFromFirestore(id);
@@ -382,10 +414,10 @@ app.post("/api/admin/approve/:id", requireAdmin, async (req, res) => {
       timestamp: new Date().toISOString()
     });
 
-    res.json({ success: true, resource: finalResource });
+    res.type("application/json").json({ success: true, resource: finalResource });
   } catch (err) {
     console.error("POST /api/admin/approve/:id error:", err);
-    res.status(500).json({ error: "Failed to approve proposal" });
+    res.status(500).type("application/json").json({ error: "Failed to approve proposal" });
   }
 });
 
@@ -394,10 +426,10 @@ app.post("/api/admin/reject/:id", requireAdmin, async (req, res) => {
   const { id } = req.params;
   try {
     await deletePendingSubmissionFromFirestore(id);
-    res.json({ success: true });
+    res.type("application/json").json({ success: true });
   } catch (err) {
     console.error("POST /api/admin/reject/:id error:", err);
-    res.status(500).json({ error: "Failed to reject proposal" });
+    res.status(500).type("application/json").json({ error: "Failed to reject proposal" });
   }
 });
 
@@ -405,10 +437,10 @@ app.post("/api/admin/reject/:id", requireAdmin, async (req, res) => {
 app.get("/api/admin/approved-history", requireAdmin, async (req, res) => {
   try {
     const list = await getApprovedHistoryFromFirestore();
-    res.json(list);
+    res.type("application/json").json(list);
   } catch (err) {
     console.error("GET /api/admin/approved-history error:", err);
-    res.status(500).json({ error: "Failed to fetch approved history" });
+    res.status(500).type("application/json").json({ error: "Failed to fetch approved history" });
   }
 });
 
@@ -416,10 +448,10 @@ app.get("/api/admin/approved-history", requireAdmin, async (req, res) => {
 app.get("/api/admin/resources", requireAdmin, async (req, res) => {
   try {
     const resources = await getResourcesFromFirestore();
-    res.json(resources);
+    res.type("application/json").json(resources);
   } catch (err) {
     console.error("GET /api/admin/resources error:", err);
-    res.status(500).json({ error: "Failed to fetch resources" });
+    res.status(500).type("application/json").json({ error: "Failed to fetch resources" });
   }
 });
 
@@ -432,7 +464,7 @@ app.put("/api/admin/resources/:id", requireAdmin, async (req, res) => {
     const resources = await getResourcesFromFirestore();
     const existing = resources.find((r) => r.id === id);
     if (!existing) {
-      return res.status(404).json({ error: "Resource not found" });
+      return res.status(404).type("application/json").json({ error: "Resource not found" });
     }
 
     const updated: SupportResource = {
@@ -450,10 +482,10 @@ app.put("/api/admin/resources/:id", requireAdmin, async (req, res) => {
     };
 
     await saveResourceToFirestore(updated);
-    res.json({ success: true, resource: updated });
+    res.type("application/json").json({ success: true, resource: updated });
   } catch (err) {
     console.error("PUT /api/admin/resources/:id error:", err);
-    res.status(500).json({ error: "Failed to update resource" });
+    res.status(500).type("application/json").json({ error: "Failed to update resource" });
   }
 });
 
@@ -462,10 +494,10 @@ app.delete("/api/admin/resources/:id", requireAdmin, async (req, res) => {
   const { id } = req.params;
   try {
     await deleteResourceFromFirestore(id);
-    res.json({ success: true });
+    res.type("application/json").json({ success: true });
   } catch (err) {
     console.error("DELETE /api/admin/resources/:id error:", err);
-    res.status(500).json({ error: "Failed to delete resource" });
+    res.status(500).type("application/json").json({ error: "Failed to delete resource" });
   }
 });
 
@@ -480,10 +512,10 @@ app.get("/api/admin/chats", requireAdmin, async (req, res) => {
       return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
     });
 
-    res.json(chatList);
+    res.type("application/json").json(chatList);
   } catch (err) {
     console.error("GET /api/admin/chats error:", err);
-    res.status(500).json({ error: "Failed to fetch chat sessions" });
+    res.status(500).type("application/json").json({ error: "Failed to fetch chat sessions" });
   }
 });
 
@@ -493,13 +525,13 @@ app.post("/api/admin/chats/:sessionId/reply", requireAdmin, async (req, res) => 
   const { text } = req.body;
 
   if (!text) {
-    return res.status(400).json({ error: "Message text is required" });
+    return res.status(400).type("application/json").json({ error: "Message text is required" });
   }
 
   try {
     const session = await getChatFromFirestore(sessionId);
     if (!session) {
-      return res.status(404).json({ error: "Session not found" });
+      return res.status(404).type("application/json").json({ error: "Session not found" });
     }
 
     const adminMsgId = "cns_" + Math.random().toString(36).substr(2, 9);
@@ -516,10 +548,10 @@ app.post("/api/admin/chats/:sessionId/reply", requireAdmin, async (req, res) => 
     session.needsHuman = true;
 
     await saveChatToFirestore(session);
-    res.json({ success: true, chat: session, reply: adminMsg });
+    res.type("application/json").json({ success: true, chat: session, reply: adminMsg });
   } catch (err) {
     console.error("POST /api/admin/chats/:sessionId/reply error:", err);
-    res.status(500).json({ error: "Failed to send counselor reply" });
+    res.status(500).type("application/json").json({ error: "Failed to send counselor reply" });
   }
 });
 
@@ -527,14 +559,14 @@ app.post("/api/admin/chats/:sessionId/reply", requireAdmin, async (req, res) => 
 app.post("/api/admin/credentials", requireAdmin, async (req, res) => {
   const { username, password } = req.body;
   if (!username || !password) {
-    return res.status(400).json({ error: "Username and password required" });
+    return res.status(400).type("application/json").json({ error: "Username and password required" });
   }
   try {
     await saveAdminCredentialsToFirestore(username, password);
-    res.json({ success: true, message: "Admin credentials updated in Firebase." });
+    res.type("application/json").json({ success: true, message: "Admin credentials updated in Firebase." });
   } catch (err) {
     console.error("POST /api/admin/credentials error:", err);
-    res.status(500).json({ error: "Failed to update admin credentials" });
+    res.status(500).type("application/json").json({ error: "Failed to update admin credentials" });
   }
 });
 
@@ -542,10 +574,10 @@ app.post("/api/admin/credentials", requireAdmin, async (req, res) => {
 app.post("/api/admin/seed", requireAdmin, async (req, res) => {
   try {
     await seedDefaultResourcesToFirestore();
-    res.json({ success: true, message: "Default resources seeded to Firebase." });
+    res.type("application/json").json({ success: true, message: "Default resources seeded to Firebase." });
   } catch (err) {
     console.error("POST /api/admin/seed error:", err);
-    res.status(500).json({ error: "Failed to seed resources" });
+    res.status(500).type("application/json").json({ error: "Failed to seed resources" });
   }
 });
 
